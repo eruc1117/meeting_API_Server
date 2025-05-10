@@ -2,6 +2,7 @@ const validator = require('../utils/validator');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+require('dotenv').config();
 
 class AuthService {
   static async register(ID, email, account, password) {
@@ -17,7 +18,7 @@ class AuthService {
     const passwordHash = await bcrypt.hash(password, 10);
     const newUserId = await User.create(ID, email, account, passwordHash);
 
-    const token = jwt.sign({ id: newUserId }, 'secret', { expiresIn: '1h' });
+    const token = jwt.sign({ id: newUserId }, process.env.SECRET, { expiresIn: '1h' });
 
     return {
       status: 201,
