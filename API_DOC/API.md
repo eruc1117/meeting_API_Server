@@ -95,8 +95,12 @@
 
 - **請求** URL: /api/schedules
 - **方法**: POST
-- **請求參數** (JSON Body):
-
+- **請求參數**
+- (Header):
+```
+Authorization: Bearer <JWT-TOKEN>
+```
+- (JSON Body):
 ``` json
 {
   "user_id": 1,
