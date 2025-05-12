@@ -1,9 +1,7 @@
 const db = require('../db');
 
 class ScheduleService {
-  static async createSchedule(user_id, title, description, start_time, end_time) {
-    console.log("ScheduleService");
-    console.log(user_id, title, description, start_time, end_time);
+  static async createSchedule(user_id, title, description, start_time, end_time) {;
     if (!user_id || !title || !start_time || !end_time) {
       return {
         status: 400,
@@ -16,7 +14,7 @@ class ScheduleService {
         `INSERT INTO schedules (user_id, title, description, start_time, end_time)
          VALUES ($1, $2, $3, $4, $5)
          RETURNING *`,
-        [user_id, title, description, Date.parse(start_time), Date.parse(end_time)]
+        [user_id, title, description, start_time, end_time]
       );
 
       return {

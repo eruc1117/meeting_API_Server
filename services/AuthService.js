@@ -46,7 +46,7 @@ class AuthService {
         return { status: 401, body: { message: 'Invalid credentials' } };
       }
 
-      const token = jwt.sign({ id: user.id }, 'secret', { expiresIn: '1h' });
+      const token = jwt.sign({ id: user.id }, process.env.SECRET, { expiresIn: '1h' });
 
       return {
         status: 200,

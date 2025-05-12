@@ -5,7 +5,6 @@ class ScheduleController {
   async create(req, res) {
     try {
       const {user_id, title, description, start_time, end_time} = req.body;
-      console.log("req.body ---> ", req.body);
       const result = await ScheduleService.createSchedule(user_id, title, description, start_time, end_time);
       return res.status(result.status).json(result.body);
     } catch (err) {

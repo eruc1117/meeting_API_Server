@@ -9,7 +9,8 @@
     "test:validator": "jest tests/validator",
     "test:services": "jest tests/services",
     "test:controllers": "jest tests/controllers",
-    "test:http": "jest tests/http"
+    "test:http": "jest tests/http",
+    "test:middlewares": "jest tests/middlewares"
   },
   "keywords": [],
   "author": "",

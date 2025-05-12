@@ -35,8 +35,8 @@ describe('POST /api/schedules', () => {
         user_id: userId,
         title: 'Meeting with John',
         description: 'Discuss project details',
-        start_time: '2025-05-08T09:00:00',
-        end_time: '2025-05-08T10:00:00'
+        start_time: '2025-05-08 09:00:00',
+        end_time: '2025-05-08 10:00:00'
       });
 
     expect(res.statusCode).toBe(201);
@@ -63,8 +63,8 @@ describe('POST /api/schedules', () => {
         user_id: userId,
         title: 'Test',
         description: 'Test',
-        start_time: '2025-05-08T09:00:00',
-        end_time: '2025-05-08T10:00:00'
+        start_time: '2025-05-08 09:00:00',
+        end_time: '2025-05-08 10:00:00'
       });
 
     expect(res.statusCode).toBe(401);
