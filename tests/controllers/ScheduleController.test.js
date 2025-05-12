@@ -6,11 +6,13 @@ jest.mock('../../services/ScheduleService');
 describe('ScheduleController.create', () => {
   const mockReq = {
     body: {
-      user_id: 1,
       title: 'Test Event',
       description: 'Details...',
       start_time: '2025-05-08T09:00:00',
       end_time: '2025-05-08T10:00:00'
+    },
+    user: {
+      id: 1,
     }
   };
 
@@ -33,7 +35,8 @@ describe('ScheduleController.create', () => {
     });
 
     await ScheduleController.create(mockReq, mockRes);
-    const {user_id, title, description, start_time, end_time} = mockReq.body;
+    const {title, description, start_time, end_time} = mockReq.body;
+    const user_id =  mockReq.user.id;
     expect(ScheduleService.createSchedule).toHaveBeenCalledWith(user_id, title, description, start_time, end_time);
     expect(mockRes.status).toHaveBeenCalledWith(201);
     expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
