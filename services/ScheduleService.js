@@ -1,7 +1,8 @@
 const db = require('../db');
 
 class ScheduleService {
-  static async createSchedule(user_id, title, description, start_time, end_time) {;
+  static async createSchedule(user_id, title, description, start_time, end_time) {
+    ;
     if (!user_id || !title || !start_time || !end_time) {
       return {
         status: 400,
@@ -32,6 +33,19 @@ class ScheduleService {
       };
     }
   }
+
+  static async getSchedulesByUserId(user_id) {
+    try {
+      const result = await db.query(
+        'SELECT * FROM schedules WHERE user_id = $1 ORDER BY start_time ASC',
+        [user_id]
+      );
+      return result.rows;
+    } catch (error) {
+      throw new Error('Database error');
+    }
+  }
+
 }
 
 module.exports = ScheduleService;

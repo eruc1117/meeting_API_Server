@@ -42,3 +42,22 @@ describe('ScheduleService.createSchedule', () => {
     expect(res.body.message).toBe('伺服器回傳錯誤訊息');
   });
 });
+
+
+describe('ScheduleService.getSchedulesByUserId', () => {
+  it('should return schedules for user', async () => {
+    const mockSchedules = [
+      { id: 1, user_id: 1, title: 'Meeting', start_time: '2025-05-08T09:00:00' }
+    ];
+    db.query.mockResolvedValue({ rows: mockSchedules });
+
+    const result = await ScheduleService.getSchedulesByUserId(1);
+    expect(result).toEqual(mockSchedules);
+  });
+
+  it('should throw error if DB fails', async () => {
+    db.query.mockRejectedValue(new Error('DB error'));
+
+    await expect(ScheduleService.getSchedulesByUserId(1)).rejects.toThrow('Database error');
+  });
+});

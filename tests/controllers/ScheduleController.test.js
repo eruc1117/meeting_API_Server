@@ -53,3 +53,38 @@ describe('ScheduleController.create', () => {
     expect(mockRes.json).toHaveBeenCalledWith({ message: 'Internal server error' });
   });
 });
+
+
+describe('ScheduleController.getUserSchedules', () => {
+  it('should return 200 and schedules', async () => {
+    const mockSchedules = [{ id: 1, title: 'Test Event' }];
+    ScheduleService.getSchedulesByUserId.mockResolvedValue(mockSchedules);
+
+    const req = { user: { id: 1 } };
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    };
+
+    await ScheduleController.getUserSchedules(req, res);
+
+    expect(ScheduleService.getSchedulesByUserId).toHaveBeenCalledWith(1);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ schedules: mockSchedules });
+  });
+
+  it('should return 500 on error', async () => {
+    ScheduleService.getSchedulesByUserId.mockRejectedValue(new Error('error'));
+
+    const req = { user: { id: 1 } };
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    };
+
+    await ScheduleController.getUserSchedules(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ message: '伺服器回傳錯誤訊息' });
+  });
+});
