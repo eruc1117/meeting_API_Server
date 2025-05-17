@@ -4,13 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "jest",
-    "test:db": "jest tests/db",
-    "test:validator": "jest tests/validator",
-    "test:services": "jest tests/services",
-    "test:controllers": "jest tests/controllers",
-    "test:http": "jest tests/http",
-    "test:middlewares": "jest tests/middlewares"
+    "test": "jest --verbose",
+    "test:db": "jest tests/db --verbose",
+    "test:validator": "jest tests/validator --verbose",
+    "test:services": "jest tests/services --verbose",
+    "test:controllers": "jest tests/controllers --verbose",
+    "test:http": "jest tests/http --verbose",
+    "test:middlewares": "jest tests/middlewares --verbose"
   },
   "keywords": [],
   "author": "",

@@ -46,6 +46,42 @@ class ScheduleService {
     }
   }
 
+  static async updateSchedule(user_id, schedule_id, title, description, start_time, end_time) {
+    try {
+      // 確認該筆資料是否屬於此 user
+      const { rows } = await db.query(
+        'SELECT * FROM schedules WHERE id = $1 AND user_id = $2',
+        [schedule_id, user_id]
+      );
+
+      if (rows.length === 0) {
+        return {
+          status: 404,
+          body: { message: '找不到該行事曆或權限不足' }
+        };
+      }
+
+      const updated = await db.query(
+        `UPDATE schedules 
+         SET title = $1, description = $2, start_time = $3, end_time = $4 
+         WHERE id = $5 
+         RETURNING *`,
+        [title, description, start_time, end_time, schedule_id]
+      );
+
+      return {
+        status: 200,
+        body: {
+          message: 'Schedule updated',
+          schedule: updated.rows[0]
+        }
+      };
+    } catch (err) {
+      console.error('UpdateSchedule service error:', err);
+      throw err;
+    }
+  }
+
 }
 
 module.exports = ScheduleService;

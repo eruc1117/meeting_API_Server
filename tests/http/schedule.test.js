@@ -10,7 +10,7 @@ describe('POST /api/schedules', () => {
 
   beforeAll(async () => {
     // 先建立一個用戶並登入取得 token（或 mock token）
-    const res = await request(app)
+    const userRes = await request(app)
       .post('/api/auth/register')
       .send({
         email: 'sched@example.com',
@@ -18,15 +18,15 @@ describe('POST /api/schedules', () => {
         password: 'password123'
       });
 
-    token = res.body.token;
-    userId = res.body.user.id;
-    
+    token = userRes.body.token;
+    userId = userRes.body.user.id;
+
+
   });
 
   afterAll(async () => {
     await db.query(`DELETE FROM schedules WHERE user_id = ${userId}`);
     await db.query("DELETE FROM users WHERE email = 'sched@example.com'");
-    await db.end();
   });
 
   it('should create a schedule and return 201', async () => {
@@ -93,3 +93,88 @@ describe('POST /api/schedules', () => {
 
 });
 
+describe('PUT /api/schedules/:id', () => {
+  let token;
+  let userId;
+  let scheduleId;
+
+  beforeAll(async () => {
+    // 先建立一個用戶並登入取得 token（或 mock token）
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({
+        email: 'sched@example.com',
+        account: 'scheduser',
+        password: 'password123'
+      });
+
+    token = res.body.token;
+    userId = res.body.user.id;
+
+    console.log("token ---> ", token);
+    console.log("userId ---> ", userId);
+
+    const createRes = await request(app)
+    .post('/api/schedules')
+    .set('Authorization', `Bearer ${token}`)
+    .send({
+      user_id: userId,
+      title: 'Meeting with John',
+      description: 'Discuss project details',
+      start_time: '2025-05-08 09:00:00',
+      end_time: '2025-05-08 10:00:00'
+    });
+
+    scheduleId = createRes.body.schedule.id;
+    console.log("scheduleId ---> ", scheduleId);
+    
+  });
+
+  afterAll(async () => {
+    await db.query(`DELETE FROM schedules WHERE user_id = ${userId}`);
+    await db.query("DELETE FROM users WHERE email = 'sched@example.com'");
+    await db.end();
+  });
+
+  const updatedSchedule = {
+    id: scheduleId,
+    user_id: userId,
+    title: 'Updated Meeting',
+    description: 'Updated details',
+    start_time: '2025-05-08 10:00:00',
+    end_time: '2025-05-08 11:00:00',
+    created_at: '2025-05-08 09:00:00'
+  };
+
+  it('should return 200 and updated schedule if authorized', async () => {
+    // SELECT 查詢該筆 schedule 是否存在
+
+    const res = await request(app)
+      .put(`/api/schedules/${scheduleId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        title: 'Updated Meeting',
+        description: 'Updated details',
+        start_time: '2025-05-08 10:00:00',
+        end_time: '2025-05-08 11:00:00'
+      });
+
+
+    expect(res.status).toBe(200);
+    expect(res.body.message).toBe('Schedule updated');
+  });
+
+  it('should return 401 if token is missing', async () => {
+    const res = await request(app)
+      .put(`/api/schedules/${scheduleId}`)
+      .send({
+        title: 'Updated Meeting',
+        description: 'Updated details',
+        start_time: '2025-05-08 10:00:00',
+        end_time: '2025-05-08 11:00:00'
+      });
+
+    expect(res.status).toBe(401);
+    expect(res.body.message).toBe('帳號尚未登入');
+  });
+});
