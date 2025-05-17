@@ -45,6 +45,21 @@ class ScheduleController {
       return res.status(500).json({ message: 'Internal server error' });
     }
   }
+
+  static async delete(req, res) {
+    try {
+      const user_id = req.user.id; // 從 JWT middleware 取得
+      const scheduleId = parseInt(req.params.id, 10);
+
+      const result = await ScheduleService.deleteSchedule(user_id, scheduleId);
+
+      return res.status(result.status).json(result.body);
+    } catch (err) {
+      console.error('Delete schedule error:', err);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
 }
 
 module.exports = ScheduleController;

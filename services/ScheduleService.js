@@ -82,6 +82,33 @@ class ScheduleService {
     }
   }
 
+  static async deleteSchedule(user_id, schedule_id) {
+    try {
+      // 檢查該筆是否屬於 user 本人
+      const { rows } = await db.query(
+        'SELECT * FROM schedules WHERE id = $1 AND user_id = $2',
+        [schedule_id, user_id]
+      );
+
+      if (rows.length === 0) {
+        return {
+          status: 404,
+          body: { message: '找不到該行事曆或權限不足' },
+        };
+      }
+
+      await db.query('DELETE FROM schedules WHERE id = $1', [schedule_id]);
+
+      return {
+        status: 200,
+        body: { message: 'Schedule deleted' },
+      };
+    } catch (err) {
+      console.error('DeleteSchedule service error:', err);
+      throw err;
+    }
+  }
+
 }
 
 module.exports = ScheduleService;

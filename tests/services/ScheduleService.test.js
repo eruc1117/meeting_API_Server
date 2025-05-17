@@ -115,3 +115,31 @@ describe('ScheduleService.updateSchedule', () => {
     )).rejects.toThrow('DB error');
   });
 });
+
+
+describe('ScheduleService.deleteSchedule', () => {
+  it('should return 200 if schedule is deleted successfully', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 1, user_id: 1 }] }) // SELECT 查詢有結果
+      .mockResolvedValueOnce({}); // DELETE 成功
+
+    const result = await ScheduleService.deleteSchedule(1, 1);
+
+    expect(result.status).toBe(200);
+    expect(result.body.message).toBe('Schedule deleted');
+  });
+
+  it('should return 404 if schedule does not belong to user', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] }); // SELECT 查詢無結果
+
+    const result = await ScheduleService.deleteSchedule(2, 999);
+    expect(result.status).toBe(404);
+    expect(result.body.message).toBe('找不到該行事曆或權限不足');
+  });
+
+  it('should throw error if DB fails', async () => {
+    db.query.mockRejectedValue(new Error('DB error'));
+
+    await expect(ScheduleService.deleteSchedule(1, 1)).rejects.toThrow('DB error');
+  });
+});

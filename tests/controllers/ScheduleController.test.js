@@ -154,3 +154,53 @@ describe('ScheduleController.update', () => {
     expect(res.json).toHaveBeenCalledWith({ message: 'Internal server error' });
   });
 });
+
+describe('ScheduleController.delete', () => {
+  let req, res;
+
+  beforeEach(() => {
+    req = {
+      user: { id: 1 },
+      params: { id: '1' }
+    };
+
+    res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    };
+  });
+
+  it('should return 200 and success message if deletion successful', async () => {
+    ScheduleService.deleteSchedule.mockResolvedValue({
+      status: 200,
+      body: { message: 'Schedule deleted' }
+    });
+
+    await ScheduleController.delete(req, res);
+
+    expect(ScheduleService.deleteSchedule).toHaveBeenCalledWith(1, 1);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ message: 'Schedule deleted' });
+  });
+
+  it('should return 404 if schedule not found or unauthorized', async () => {
+    ScheduleService.deleteSchedule.mockResolvedValue({
+      status: 404,
+      body: { message: '找不到該行事曆或權限不足' }
+    });
+
+    await ScheduleController.delete(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ message: '找不到該行事曆或權限不足' });
+  });
+
+  it('should return 500 if an error is thrown', async () => {
+    ScheduleService.deleteSchedule.mockRejectedValue(new Error('DB error'));
+
+    await ScheduleController.delete(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ message: 'Internal server error' });
+  });
+});
