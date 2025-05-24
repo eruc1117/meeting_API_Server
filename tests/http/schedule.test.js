@@ -1,36 +1,124 @@
 const request = require('supertest');
-const app = require('../../app'); // 匯入 Express app
-const db = require('../../db'); // 匯入 DB 連線（如果要清資料）
-const jwt = require('jsonwebtoken');
+const app = require('../../app');
+const db = require('../../db');
 require('dotenv').config();
 
-describe('POST /api/schedules', () => {
+describe('Schedule API 測試', () => {
   let token;
   let userId;
+  let scheduleId;
 
   beforeAll(async () => {
-    // 先建立一個用戶並登入取得 token（或 mock token）
     const userRes = await request(app)
       .post('/api/auth/register')
       .send({
         email: 'sched@example.com',
+        username: 'schedule',
         account: 'scheduser',
-        password: 'password123'
+        password: 'password123',
+        passwordChk: 'password123'
       });
 
-    token = userRes.body.token;
-    userId = userRes.body.user.id;
-
-
+    token = userRes.body.data.token;
+    userId = userRes.body.data.user.id;
   });
 
   afterAll(async () => {
-    await db.query(`DELETE FROM schedules WHERE user_id = ${userId}`);
-    await db.query("DELETE FROM users WHERE email = 'sched@example.com'");
+    await db.query(`DELETE FROM schedules WHERE user_id = $1`, [userId]);
+    await db.query(`DELETE FROM users WHERE id = $1`, [userId]);
+    await db.end();
   });
 
-  it('should create a schedule and return 201', async () => {
-    const res = await request(app)
+  describe('POST /api/schedules', () => {
+    it('成功建立行事曆事件', async () => {
+      const res = await request(app)
+        .post('/api/schedules')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          user_id: userId,
+          title: 'Meeting with John',
+          description: 'Discuss project details',
+          start_time: '2025-05-08 09:00:00',
+          end_time: '2025-05-08 10:00:00'
+        });
+
+      expect(res.statusCode).toBe(201);
+      expect(res.body.message).toBe('行事曆事件建立成功');
+      expect(res.body.data.schedule).toHaveProperty('title', 'Meeting with John');
+      expect(res.body.error).toEqual({});
+      scheduleId = res.body.data.schedule.id;
+    });
+
+    it('缺少必要欄位應回傳 400', async () => {
+      const res = await request(app)
+        .post('/api/schedules')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ title: 'Missing Fields' });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toBe('活動建立失敗，資料未提供');
+      expect(res.body.error.code).toBe('E007_NOT_FOUND');
+    });
+
+    it('活動建立失敗，時段重複', async () => {
+      const res = await request(app)
+        .post('/api/schedules')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          user_id: userId,
+          title: 'Meeting with John',
+          description: 'Discuss project details',
+          start_time: '2025-05-08 09:00:00',
+          end_time: '2025-05-08 10:00:00'
+        });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toBe('活動建立失敗，時段重複');
+      expect(res.body.error.code).toBe('E006_SCHEDULE_CONFLICT');
+    });
+
+    it('未提供 JWT 應回傳 401', async () => {
+      const res = await request(app)
+        .post('/api/schedules')
+        .send({
+          user_id: userId,
+          title: 'Unauthorized',
+          description: 'Missing token',
+          start_time: '2025-05-08 09:00:00',
+          end_time: '2025-05-08 10:00:00'
+        });
+
+      expect(res.statusCode).toBe(401);
+      expect(res.body.message).toBe('活動建立失敗，未登入');
+      expect(res.body.error.code).toBe('E004_UNAUTHORIZED');
+    });
+  });
+
+  describe('GET /api/schedules', () => {
+    it('成功取得行事曆事件', async () => {
+      const res = await request(app)
+        .get('/api/schedules')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.data.schedules).toBeDefined();
+      expect(res.body.message).toBe('取得成功');
+      expect(res.body.error).toEqual({});
+    });
+
+    it('未提供 JWT 應回傳 401', async () => {
+      const res = await request(app).get('/api/schedules');
+      expect(res.statusCode).toBe(401);
+      expect(res.body.message).toBe('帳號尚未登入');
+      expect(res.body.error.code).toBe('E007_UNAUTHORIZED');
+    });
+  });
+
+  describe('PUT /api/schedules/:id', () => {
+    let eventID;
+
+    beforeAll(async () => {
+      const res = await request(app)
       .post('/api/schedules')
       .set('Authorization', `Bearer ${token}`)
       .send({
@@ -40,204 +128,80 @@ describe('POST /api/schedules', () => {
         start_time: '2025-05-08 09:00:00',
         end_time: '2025-05-08 10:00:00'
       });
-
-    expect(res.statusCode).toBe(201);
-    expect(res.body).toHaveProperty('message', 'Event created');
-    expect(res.body.schedule).toHaveProperty('title', 'Meeting with John');
-  });
-
-  it('should return 400 for missing fields', async () => {
-    const res = await request(app)
-      .post('/api/schedules')
-      .set('Authorization', `Bearer ${token}`)
-      .send({
-        title: 'Incomplete Event'
-      });
-
-    expect(res.statusCode).toBe(400);
-    expect(res.body).toHaveProperty('message');
-  });
-
-  it('should return 401 if no token provided', async () => {
-    const res = await request(app)
-      .post('/api/schedules')
-      .send({
-        user_id: userId,
-        title: 'Test',
-        description: 'Test',
-        start_time: '2025-05-08 09:00:00',
-        end_time: '2025-05-08 10:00:00'
-      });
-
-    expect(res.statusCode).toBe(401);
-    expect(res.body).toHaveProperty('message', '帳號尚未登入');
-  });
-
-  
-  it('應成功回傳用戶的行事曆事件', async () => {
-    const res = await request(app)
-      .get('/api/schedules')
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body.schedules).toBeDefined();
-    expect(res.body.schedules.length).toBe(1);
-    expect(res.body.schedules[0].title).toBe('Meeting with John');
-  });
-
-  it('未提供 JWT 時應回傳 401', async () => {
-    const res = await request(app).get('/api/schedules');
-    expect(res.statusCode).toBe(401);
-    expect(res.body.message).toMatch('帳號尚未登入');
-  });
-
-});
-
-describe('PUT /api/schedules/:id', () => {
-  let token;
-  let userId;
-  let scheduleId;
-
-  beforeAll(async () => {
-    // 先建立一個用戶並登入取得 token（或 mock token）
-    const res = await request(app)
-      .post('/api/auth/register')
-      .send({
-        email: 'sched@example.com',
-        account: 'scheduser',
-        password: 'password123'
-      });
-
-    token = res.body.token;
-    userId = res.body.user.id;
-
-    console.log("token ---> ", token);
-    console.log("userId ---> ", userId);
-
-    const createRes = await request(app)
-    .post('/api/schedules')
-    .set('Authorization', `Bearer ${token}`)
-    .send({
-      user_id: userId,
-      title: 'Meeting with John',
-      description: 'Discuss project details',
-      start_time: '2025-05-08 09:00:00',
-      end_time: '2025-05-08 10:00:00'
+      eventID = res.body.data.id
     });
 
-    scheduleId = createRes.body.schedule.id;
-    console.log("scheduleId ---> ", scheduleId);
-    
-  });
-
-  afterAll(async () => {
-    await db.query(`DELETE FROM schedules WHERE user_id = ${userId}`);
-    await db.query("DELETE FROM users WHERE email = 'sched@example.com'");
-  });
-
-  const updatedSchedule = {
-    id: scheduleId,
-    user_id: userId,
-    title: 'Updated Meeting',
-    description: 'Updated details',
-    start_time: '2025-05-08 10:00:00',
-    end_time: '2025-05-08 11:00:00',
-    created_at: '2025-05-08 09:00:00'
-  };
-
-  it('should return 200 and updated schedule if authorized', async () => {
-    // SELECT 查詢該筆 schedule 是否存在
-
-    const res = await request(app)
-      .put(`/api/schedules/${scheduleId}`)
-      .set('Authorization', `Bearer ${token}`)
-      .send({
-        title: 'Updated Meeting',
-        description: 'Updated details',
-        start_time: '2025-05-08 10:00:00',
-        end_time: '2025-05-08 11:00:00'
-      });
 
 
-    expect(res.status).toBe(200);
-    expect(res.body.message).toBe('Schedule updated');
-  });
+    it('成功更新行事曆事件', async () => {
+      const res = await request(app)
+        .put(`/api/schedules/${scheduleId}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          id: eventID,
+          title: 'Updated Title',
+          description: 'Updated Description',
+          start_time: '2025-05-08 10:00:00',
+          end_time: '2025-05-08 11:00:00'
+        });
 
-  it('should return 401 if token is missing', async () => {
-    const res = await request(app)
-      .put(`/api/schedules/${scheduleId}`)
-      .send({
-        title: 'Updated Meeting',
-        description: 'Updated details',
-        start_time: '2025-05-08 10:00:00',
-        end_time: '2025-05-08 11:00:00'
-      });
-
-    expect(res.status).toBe(401);
-    expect(res.body.message).toBe('帳號尚未登入');
-  });
-});
-
-describe('DELETE /api/schedules/:id', () => {
-  let token;
-  let userId;
-  let scheduleId;
-
-  beforeAll(async () => {
-    // 先建立一個用戶並登入取得 token（或 mock token）
-    const res = await request(app)
-      .post('/api/auth/register')
-      .send({
-        email: 'sched@example.com',
-        account: 'scheduser',
-        password: 'password123'
-      });
-
-    token = res.body.token;
-    userId = res.body.user.id;
-
-    console.log("token ---> ", token);
-    console.log("userId ---> ", userId);
-
-    const createRes = await request(app)
-    .post('/api/schedules')
-    .set('Authorization', `Bearer ${token}`)
-    .send({
-      user_id: userId,
-      title: 'Meeting with John',
-      description: 'Discuss project details',
-      start_time: '2025-05-08 09:00:00',
-      end_time: '2025-05-08 10:00:00'
+      expect(res.statusCode).toBe(200);
+      expect(res.body.message).toBe('行事曆事件更新成功');
+      expect(res.body.data.schedule.title).toBe('Updated Title');
     });
 
-    scheduleId = createRes.body.schedule.id;
-    console.log("scheduleId ---> ", scheduleId);
-    
+    it('未提供 JWT 應回傳 401', async () => {
+      const res = await request(app)
+        .put(`/api/schedules/${scheduleId}`)
+        .send({
+          id: eventID,
+          title: 'Unauthorized update',
+          description: 'No token',
+          start_time: '2025-05-08 12:00:00',
+          end_time: '2025-05-08 13:00:00'
+        });
+
+      expect(res.statusCode).toBe(401);
+      expect(res.body.message).toBe('活動建立失敗，未登入');
+      expect(res.body.error.code).toBe('E004_UNAUTHORIZED');
+    });
+
+    it('活動更新失敗，時段重複', async () => {
+      const res = await request(app)
+        .post('/api/schedules')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          id: eventID,
+          title: 'Updated Title',
+          description: 'Updated Description',
+          start_time: '2025-05-08 10:00:00',
+          end_time: '2025-05-08 11:00:00'
+        });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toBe('活動建立失敗，時段重複');
+      expect(res.body.error.code).toBe('E006_SCHEDULE_CONFLICT');
+    });
+
   });
 
-  afterAll(async () => {
-    await db.query(`DELETE FROM schedules WHERE user_id = ${userId}`);
-    await db.query("DELETE FROM users WHERE email = 'sched@example.com'");
-    await db.end();
-  });
+  describe('DELETE /api/schedules/:id', () => {
+    it('成功刪除事件', async () => {
+      const res = await request(app)
+        .delete(`/api/schedules/${scheduleId}`)
+        .set('Authorization', `Bearer ${token}`);
 
-  it('should delete a schedule and return 200', async () => {
-    // SELECT 查詢該筆 schedule 是否存在
+      expect(res.statusCode).toBe(200);
+      expect(res.body.message).toBe('行事曆事件刪除成功');
+    });
 
-    const res = await request(app)
-      .delete(`/api/schedules/${scheduleId}`)
-      .set('Authorization', `Bearer ${token}`);
+    it('未提供 JWT 應回傳 401', async () => {
+      const res = await request(app)
+        .delete(`/api/schedules/${scheduleId}`);
 
-
-    expect(res.status).toBe(200);
-    expect(res.body.message).toBe('Schedule deleted');
-  });
-
-  it('should return 401 if token is missing', async () => {
-    const res = await request(app)
-      .delete(`/api/schedules/${scheduleId}`);
-
-    expect(res.status).toBe(401);
-    expect(res.body.message).toBe('帳號尚未登入');
+      expect(res.statusCode).toBe(401);
+      expect(res.body.message).toBe('活動刪除失敗，未登入');
+      expect(res.body.error.code).toBe('E004_UNAUTHORIZED');
+    });
   });
 });

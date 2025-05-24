@@ -178,8 +178,15 @@ Authorization: Bearer <JWT-TOKEN>
 ``` json
 {
   "message": "活動建立成功",
-  "data" : {
-  },
+  "data" :  {
+      "id": 1,
+      "user_id": 1,
+      "title": "Meeting with John",
+      "description": "Discuss project details",
+      "start_time": "2025-05-08T09:00:00",
+      "end_time": "2025-05-08T10:00:00",
+      "created_at": "2025-05-08T09:00:00"
+    },
   "error": {
   }
 }
@@ -355,7 +362,7 @@ Authorization: Bearer <JWT-TOKEN>
     "reEndTime": ""
   },
   "error": {
-    "code" : "E004_UNAUTHORIZED"
+    "code" : "E006_SCHEDULE_CONFLICT"
   }
 }
 ```

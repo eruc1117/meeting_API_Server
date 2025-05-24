@@ -1,6 +1,6 @@
 const request = require('supertest');
-const app = require('../../app'); // 匯入 Express app
-const db = require('../../db'); // 匯入資料庫連線（若需初始化/清除資料）
+const app = require('../../app');
+const db = require('../../db');
 
 describe('POST /api/auth/register', () => {
   it('should register a new user successfully', async () => {
@@ -8,14 +8,21 @@ describe('POST /api/auth/register', () => {
       .post('/api/auth/register')
       .send({
         email: 'user@example.com',
-        account: 'username',
-        password: 'password123'
+        username: 'user',
+        account: 'account01',
+        password: 'password123',
+        passwordChk: 'password123'
       });
 
-    expect(res.statusCode).toBe(201);
-    expect(res.body).toHaveProperty('message', 'User created');
-    expect(res.body).toHaveProperty('user');
-    expect(res.body).toHaveProperty('token');
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({
+      message: '使用者註冊成功',
+      data: {
+        user: expect.objectContaining({ id: expect.any(Number) }),
+        token: expect.any(String)
+      },
+      error: {}
+    });
   });
 
   it('should return 400 for invalid email', async () => {
@@ -23,46 +30,75 @@ describe('POST /api/auth/register', () => {
       .post('/api/auth/register')
       .send({
         email: 'invalid-email',
-        account: 'username2',
-        password: 'password123'
+        username: 'user2',
+        account: 'account02',
+        password: 'password123',
+        passwordChk: 'password123'
       });
 
     expect(res.statusCode).toBe(400);
-    expect(res.body).toHaveProperty('message', 'Invalid email format');
+    expect(res.body).toEqual({
+      message: '電子信箱格式錯誤',
+      data: {},
+      error: { code: 'E002_INVALID_EMAIL' }
+    });
+  });
+
+  it('should return 400 if passwords do not match', async () => {
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({
+        email: 'user3@example.com',
+        username: 'user3',
+        account: 'account03',
+        password: 'password123',
+        passwordChk: 'password321'
+      });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toEqual({
+      message: '密碼和確認密碼不同',
+      data: {},
+      error: { code: 'E009_PASSWORD_NOT_SAME' }
+    });
   });
 
   it('should return 409 for duplicate user', async () => {
-    // 第一次創建成功
     await request(app)
       .post('/api/auth/register')
       .send({
         email: 'dup@example.com',
+        username: 'dup',
         account: 'dupuser',
-        password: 'password123'
+        password: 'password123',
+        passwordChk: 'password123'
       });
 
-    // 第二次重複
     const res = await request(app)
       .post('/api/auth/register')
       .send({
         email: 'dup@example.com',
+        username: 'dup',
         account: 'dupuser',
-        password: 'password123'
+        password: 'password123',
+        passwordChk: 'password123'
       });
 
     expect(res.statusCode).toBe(409);
-    expect(res.body).toHaveProperty('message', 'User already exists');
+    expect(res.body).toEqual({
+      message: '使用者已存在',
+      data: {},
+      error: { code: 'E001_USER_EXISTS' }
+    });
   });
 });
 
-
-
 describe('POST /api/auth/login', () => {
   afterAll(async () => {
-    // 清除測試資料（根據實際 DB 規則來定）
-    await db.query("DELETE FROM users WHERE email IN ('user@example.com', 'dup@example.com')");
-    await db.end(); // 關閉 DB
+    await db.query("DELETE FROM users WHERE email IN ('user@example.com', 'user3@example.com', 'dup@example.com')");
+    await db.end();
   });
+
   it('should return 200 with token if login successful', async () => {
     const res = await request(app)
       .post('/api/auth/login')
@@ -71,21 +107,50 @@ describe('POST /api/auth/login', () => {
         password: 'password123'
       });
 
-    expect(res.status).toBe(200);
-    expect(res.body.message).toBe('Login successful');
-    expect(res.body).toHaveProperty('token');
-    expect(res.body.user.email).toBe('user@example.com');
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({
+      message: '登入成功',
+      data: {
+        user: expect.objectContaining({
+          id: expect.any(Number),
+          email: 'user@example.com',
+          username: expect.any(String)
+        }),
+        token: expect.any(String)
+      },
+      error: {}
+    });
   });
 
-  it('should return 401 if login fails', async () => {
+  it('should return 401 if account not exists', async () => {
     const res = await request(app)
       .post('/api/auth/login')
       .send({
-        account: 'wrong@example.com',
+        account: 'nonexistent@example.com',
+        password: 'password123'
+      });
+
+    expect(res.statusCode).toBe(401);
+    expect(res.body).toEqual({
+      message: '登入失敗，帳號不存在',
+      data: {},
+      error: { code: 'E008_ACCOUNT_NOT_EXIST' }
+    });
+  });
+
+  it('should return 401 if password is incorrect', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({
+        account: 'user@example.com',
         password: 'wrongpassword'
       });
 
-    expect(res.status).toBe(401);
-    expect(res.body.message).toBe('Invalid credentials');
+    expect(res.statusCode).toBe(401);
+    expect(res.body).toEqual({
+      message: '登入失敗，帳號密碼錯誤',
+      data: {},
+      error: { code: 'E003_INVALID_CREDENTIALS' }
+    });
   });
 });
