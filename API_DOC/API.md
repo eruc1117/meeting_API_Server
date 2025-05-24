@@ -190,7 +190,7 @@ Authorization: Bearer <JWT-TOKEN>
 ```json
 
 {
-  "message": "活動建立失敗",
+  "message": "活動建立失敗，資料未提供",
   "data" : {},
   "error": {
     "code" : "E007_NOT_FOUND"
@@ -236,7 +236,7 @@ Authorization: Bearer <JWT-TOKEN>
 - **方法**: GET
 - **請求參數**: 
     - user_id: 用戶的 ID
-
+    - 
 回應
 成功 (200 OK):
 
