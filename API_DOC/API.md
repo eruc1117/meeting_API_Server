@@ -1,5 +1,9 @@
 # API 文檔
 
+## 0. **共通功能**
+- 只允許特定 IP 來源
+- 輸入資料驗證
+
 ## 1. **登入/註冊相關 API**
 
 ### 1.1 註冊用戶（`POST /api/auth/register`）
@@ -24,27 +28,40 @@
 ```json
 {
   "message": "User created",
-  "user": {
-    "id": 1
+  "data" : {
+    "user": {"id": 1},
+    "token": "JWT-TOKEN"
   },
-  "token": "JWT-TOKEN"
+  "error": { 
+  }
 }
 ```
 
 #### 失敗 1：用戶已存在（409 Conflict）
 
-````json
+```json
 {
-  "message": "User already exists"
+  "message": "使用者已存在",
+  "data" : {
+  },
+  "error": {
+    "code" : "E001_USER_EXISTS"
+  }
 }
-````
+```
 
 #### 失敗 2：電子郵件格式錯誤（400 Bad Request）
 
 ````json
 {
-  "message": "Invalid email format"
+  "message": "電子信箱格式錯誤",
+  "data" : {
+  },
+  "error": {
+    "code" : "E002_INVALID_EMAIL"
+  }
 }
+
 ````
 
 
@@ -69,29 +86,58 @@
 ####  成功 (200 OK):
 
 ```json
+
 {
-  "message": "Login successful",
-  "user": {
-    "id": 1,
-    "email": "user@example.com",
-    "username": "username"
+  "message": "登入成功",
+  "data" : {
+    "user": {
+      "id": 1,
+      "email": "user@example.com",
+      "username": "username",
+      "token": "JWT-TOKEN"
+    }
   },
-  "token": "JWT-TOKEN"
+  "error": {
+  }
 }
 ```
 ####  失敗 (401 Unauthorized):
 
 ```json
 {
-  "message": "Invalid credentials"
+  "message": "登入失敗，帳號不存在",
+  "data" : {
+  },
+  "error": {
+    "code" : "E008_ACCOUNT_NOT_EXIST"
+  }
 }
+
 ```
+
+####  失敗 (401 Unauthorized):
+
+```json
+{
+  "message": "登入失敗，帳號密碼錯誤",
+  "data" : {
+  },
+  "error": {
+    "code" : "E003_INVALID_CREDENTIALS"
+  }
+}
+
+```
+
 
 ## 2. 行事曆 API
 
 ### 2.1 創建行事曆事件（`POST /api/schedules`）
 #### 描述 
-用戶創建一個新的行事曆事件。
+1. 用戶創建一個新的行事曆事件。
+2. 此需求需先進行身分驗證。
+3. 建立的行事曆日期有重複時，回傳錯誤訊息。
+
 
 - **請求** URL: /api/schedules
 - **方法**: POST
@@ -116,15 +162,10 @@ Authorization: Bearer <JWT-TOKEN>
 
 ``` json
 {
-  "message": "Event created",
-  "schedule": {
-    "id": 1,
-    "user_id": 1,
-    "title": "Meeting with John",
-    "description": "Discuss project details",
-    "start_time": "2025-05-08T09:00:00",
-    "end_time": "2025-05-08T10:00:00",
-    "created_at": "2025-05-08T09:00:00"
+  "message": "活動建立成功",
+  "data" : {
+  },
+  "error": {
   }
 }
 ```
@@ -132,8 +173,13 @@ Authorization: Bearer <JWT-TOKEN>
 #### 失敗 1：(400 Bad Request):
 
 ```json
+
 {
-  "message": "伺服器回傳錯誤訊息"
+  "message": "活動建立失敗",
+  "data" : {},
+  "error": {
+    "code" : "E007_NOT_FOUND"
+  }
 }
 ```
 
@@ -141,7 +187,26 @@ Authorization: Bearer <JWT-TOKEN>
 
 ```json
 {
-  "message": "帳號尚未登入"
+  "message": "活動建立失敗，未登入",
+  "data" : {},
+  "error": {
+    "code" : "E004_UNAUTHORIZED"
+  }
+}
+```
+
+#### 失敗 3：(409 Bad Request):
+
+```json
+{
+  "message": "活動建立失敗，時段重複",
+  "data" : {
+    "reStartTime": "",
+    "reEndTime": ""
+  },
+  "error": {
+    "code" : "E004_UNAUTHORIZED"
+  }
 }
 ```
 
@@ -149,7 +214,8 @@ Authorization: Bearer <JWT-TOKEN>
 
 ### 2.2 查詢行事曆事件（GET /api/schedules）
 #### 描述
-用戶查詢自己的行事曆事件。
+1. 用戶查詢自己的行事曆事件。
+2. 此需求需先進行身分驗證。
 
 - **請求** URL: /api/schedules
 - **方法**: GET
@@ -161,8 +227,10 @@ Authorization: Bearer <JWT-TOKEN>
 
 ```json
 {
-  "schedules": [
-    {
+  "message": "活動查詢成功",
+  "data" : {
+    "schedule": [
+      {
       "id": 1,
       "user_id": 1,
       "title": "Meeting with John",
@@ -171,23 +239,45 @@ Authorization: Bearer <JWT-TOKEN>
       "end_time": "2025-05-08T10:00:00",
       "created_at": "2025-05-08T09:00:00"
     }
-  ]
+    ]
+  },
+  "error": {
+  }
 }
 ```
 
-失敗 (401 Bad Request):
+#### 失敗 1：(400 Bad Request):
+
+```json
+
+{
+  "message": "活動查詢失敗",
+  "data" : {},
+  "error": {
+    "code" : "E007_NOT_FOUND"
+  }
+}
+```
+
+#### 失敗 2：(401 Bad Request):
 
 ```json
 {
-  "message": "帳號尚未登入"
+  "message": "活動查詢失敗，未登入",
+  "data" : {},
+  "error": {
+    "code" : "E004_UNAUTHORIZED"
+  }
 }
 ```
-
 
 
 ### 2.3 更新行事曆事件（PUT /api/schedules/:id）
 #### 描述
-用戶更新某個行事曆事件的詳細信息。
+
+1. 用戶更新某個行事曆事件的詳細信息。
+2. 此需求需先進行身分驗證。
+3. 建立的行事曆日期有重複時，回傳錯誤訊息。
 
 - **請求** URL: /api/schedules/:id
 
@@ -204,27 +294,54 @@ Authorization: Bearer <JWT-TOKEN>
 }
 ```
 回應
-成功 (200 OK):
+#### 成功 (200 OK):
 
 ```json
 {
-  "message": "Schedule updated",
-  "schedule": {
-    "id": 1,
-    "user_id": 1,
-    "title": "Updated Meeting",
-    "description": "Updated details",
-    "start_time": "2025-05-08T10:00:00",
-    "end_time": "2025-05-08T11:00:00",
-    "created_at": "2025-05-08T09:00:00"
+  "message": "活動更新成功",
+  "data" : {
+  },
+  "error": {
   }
 }
 ```
-失敗 (401 Bad Request):
+#### 失敗 1：(400 Bad Request):
+
+```json
+
+{
+  "message": "活動更新失敗",
+  "data" : {},
+  "error": {
+    "code" : "E007_NOT_FOUND"
+  }
+}
+```
+
+#### 失敗 2：(401 Bad Request):
 
 ```json
 {
-  "message": "帳號尚未登入"
+  "message": "活動建立失敗，未登入",
+  "data" : {},
+  "error": {
+    "code" : "E004_UNAUTHORIZED"
+  }
+}
+```
+
+#### 失敗 3：(409 Bad Request):
+
+```json
+{
+  "message": "活動更新失敗，時段重複",
+  "data" : {
+    "reStartTime": "",
+    "reEndTime": ""
+  },
+  "error": {
+    "code" : "E004_UNAUTHORIZED"
+  }
 }
 ```
 
@@ -240,15 +357,36 @@ Authorization: Bearer <JWT-TOKEN>
 
 ```json
 {
-  "message": "Schedule deleted"
+  "message": "活動刪除成功",
+  "data" : {
+  },
+  "error": {
+  }
 }
 ```
 
-失敗 (401 Bad Request):
+#### 失敗 1：(400 Bad Request):
+
+```json
+
+{
+  "message": "活動刪除失敗",
+  "data" : {},
+  "error": {
+    "code" : "E007_NOT_FOUND"
+  }
+}
+```
+
+#### 失敗 2：(401 Bad Request):
 
 ```json
 {
-  "message": "帳號尚未登入"
+  "message": "活動刪除失敗，未登入",
+  "data" : {},
+  "error": {
+    "code" : "E004_UNAUTHORIZED"
+  }
 }
 ```
 
