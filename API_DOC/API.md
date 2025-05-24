@@ -17,17 +17,18 @@
 - **請求參數** (JSON Body):
   ```json
   {
-    "ID": "user",
     "email": "user@example.com",
-    "account": "username",
-    "password": "password123"
+    "username": "user",
+    "account": "account",
+    "password": "password123",
+    "passwordChk": "password123"
   }
 #### 回應
 #### 成功 (200 Created):
 
 ```json
 {
-  "message": "User created",
+  "message": "使用者註冊成功",
   "data" : {
     "user": {"id": 1},
     "token": "JWT-TOKEN"
@@ -64,6 +65,20 @@
 
 ````
 
+#### 失敗 3：密碼輸入不同（400 Bad Request）
+
+````json
+{
+  "message": "密碼和確認密碼不同",
+  "data" : {
+  },
+  "error": {
+    "code" : "E009_PASSWORD_NOT_SAME"
+  }
+}
+
+````
+
 
 ### 1.2 用戶登入 (`POST /api/auth/login`)
 
@@ -94,8 +109,8 @@
       "id": 1,
       "email": "user@example.com",
       "username": "username",
-      "token": "JWT-TOKEN"
-    }
+    },
+    "token": "JWT-TOKEN"
   },
   "error": {
   }
