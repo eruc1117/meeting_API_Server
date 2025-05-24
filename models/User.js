@@ -9,10 +9,10 @@ class User {
     return result.rows[0];
   }
 
-  static async create(email, username, passwordHash) {
+  static async create(email, username, account, passwordHash) {
     const result = await db.query(
-      'INSERT INTO users (email, username, password_hash) VALUES ($1, $2, $3) RETURNING id',
-      [email, username, passwordHash]
+      'INSERT INTO users (email, username, account, password_hash) VALUES ($1, $2, $3, $4) RETURNING id',
+      [email, username, account, passwordHash]
     );
     return result.rows[0].id;
   }

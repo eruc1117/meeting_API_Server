@@ -17,16 +17,16 @@ describe('AuthService.register', () => {
   const mockUser = {
     email: 'user@example.com',
     username: 'username',
-    account: 'username',
+    account: 'account',
     password: 'hashedpw',
     passwordChk: 'hashedpw'
   };
 
   it('should return error if email format is invalid', async () => {
-    const result = await AuthService.register(mockUser.email, mockUser.account, mockUser.username, mockUser.password, mockUser.passwordChk);
+    const result = await AuthService.register("Error Format", mockUser.account, mockUser.username, mockUser.password, mockUser.passwordChk);
 
-    expect(result.body.message).toBe('電子信箱格式錯誤');
-    expect(result.body.error.code).toBe('E002_INVALID_EMAIL');
+    expect(result.message).toBe('電子信箱格式錯誤');
+    expect(result.error.code).toBe('E002_INVALID_EMAIL');
   });
 
   it('should return error if user already exists', async () => {
@@ -35,8 +35,8 @@ describe('AuthService.register', () => {
 
     const result = await AuthService.register(mockUser.email, mockUser.account, mockUser.username, mockUser.password, mockUser.passwordChk);
 
-    expect(result.body.message).toBe('使用者已存在');
-    expect(result.body.error.code).toBe('E001_USER_EXISTS');
+    expect(result.message).toBe('註冊帳號已存在');
+    expect(result.error.code).toBe('E001_USER_EXISTS');
   });
 
   it('should return an error if the password does not match during checkPassword', async () => {
@@ -45,26 +45,27 @@ describe('AuthService.register', () => {
 
     const result = await AuthService.register(mockUser.email, mockUser.account, mockUser.username, mockUser.password, "ElsePassword");
 
-    expect(result.body.message).toBe('密碼和確認密碼不同');
-    expect(result.body.error.code).toBe('E009_PASSWORD_NOT_SAME');
+    expect(result.message).toBe('密碼和確認密碼不同');
+    expect(result.error.code).toBe('E009_PASSWORD_NOT_SAME');
   });
-
-
 
   it('should successfully create a new user and return a token', async () => {
     // Mock the return value for User.create (new user ID)
+    User.findByEmailOrUsername.mockReset();
+    User.findByEmailOrUsername.mockResolvedValueOnce(false);
     User.create.mockResolvedValueOnce(1);
     // Mock bcrypt.hash to simulate password hashing
     bcrypt.hash.mockResolvedValueOnce('hashedpassword');
     // Mock jwt.sign to return a token
     jwt.sign.mockReturnValueOnce('JWT-TOKEN');
 
-    const result = await AuthService.register(mockUser.email, mockUser.account, mockUser.username, mockUser.password, mockUser.passwordChk);
+    const result = await AuthService.register(mockUser.email, mockUser.username, mockUser.account, mockUser.password, mockUser.passwordChk);
 
-    expect(result.body.message).toBe('使用者註冊成功');
-    expect(result.body.data.user.id).toBe(1);
-    expect(result.body.data.token).toBe('JWT-TOKEN');
-    expect(User.create).toHaveBeenCalledWith('user@example.com', 'username', 'hashedpassword');
+
+    expect(result.message).toBe('使用者註冊成功');
+    expect(result.data.user.id).toBe(1);
+    expect(result.data.token).toBe('JWT-TOKEN');
+    expect(User.create).toHaveBeenCalledWith('user@example.com', 'username', 'account', 'hashedpassword');
     expect(jwt.sign).toHaveBeenCalledWith({ id: 1 }, process.env.SECRET, { expiresIn: '1h' });
   });
 });
@@ -84,10 +85,10 @@ describe('AuthService.login', () => {
 
     const result = await AuthService.login('user@example.com', 'password123');
 
-    expect(result.body.data.token).toBe('mock-token');
-    expect(result.body.data.user.id).toBe(mockUser.id);
-    expect(result.body.data.user.email).toBe(mockUser.email);
-    expect(result.body.data.user.username).toBe(mockUser.username);
+    expect(result.token).toBe('mock-token');
+    expect(result.user.id).toBe(mockUser.id);
+    expect(result.user.email).toBe(mockUser.email);
+    expect(result.user.username).toBe(mockUser.username);
     expect(User.findByEmailOrUsername).toHaveBeenCalledWith('user@example.com', 'user@example.com');
     expect(bcrypt.compare).toHaveBeenCalledWith('password123', 'hashedpw');
   });
@@ -95,15 +96,17 @@ describe('AuthService.login', () => {
   it('should return error if user is not exist ', async () => {
     User.findByEmailOrUsername.mockResolvedValue(null);
     const result = await AuthService.login('wrong@example.com', '123');
-    expect(result.body.message).toBe('登入失敗，帳號不存在');
-    expect(result.body.error.code).toBe('E008_ACCOUNT_NOT_EXIST');
+    expect(result.message).toBe('登入失敗，帳號不存在');
+    expect(result.error.code).toBe('E008_ACCOUNT_NOT_EXIST');
   });
 
   it('should return 401 if user not found or password incorrect', async () => {
-    User.findByEmailOrUsername.mockResolvedValue(null);
-    const result = await AuthService.login('wrong@example.com', '123');
-    expect(result.body.message).toBe('登入失敗，帳號密碼錯誤');
-    expect(result.body.error.code).toBe('E003_INVALID_CREDENTIALS');
+    User.findByEmailOrUsername.mockResolvedValue(true);
+    bcrypt.compare.mockReset();
+    bcrypt.compare.mockResolvedValue(false);
+    const result = await AuthService.login('user@example.com', '123');
+    expect(result.message).toBe('登入失敗，帳號密碼錯誤');
+    expect(result.error.code).toBe('E003_INVALID_CREDENTIALS');
   });
 
 });
