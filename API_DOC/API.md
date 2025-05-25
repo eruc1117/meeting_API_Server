@@ -227,11 +227,25 @@ Authorization: Bearer <JWT-TOKEN>
     "reEndTime": ""
   },
   "error": {
-    "code" : "E004_UNAUTHORIZED"
+    "code" : "E006_SCHEDULE_CONFLICT"
   }
 }
 ```
 
+#### 失敗 4：(401 Bad Request):
+
+```json
+{
+  "message": "活動建立失敗，資料格式錯誤",
+  "data" : {
+    "reStartTime": "",
+    "reEndTime": ""
+  },
+  "error": {
+    "code" : "E011_DATA_TYPE_ERROR"
+  }
+}
+```
 
 
 ### 2.2 查詢行事曆事件（GET /api/schedules）

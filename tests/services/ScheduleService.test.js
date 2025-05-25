@@ -1,7 +1,10 @@
 const ScheduleService = require('../../services/ScheduleService');
+const Schedule = require("../../models/Schedule");
 const db = require('../../db');
 
 jest.mock('../../db');
+jest.mock("../../models/Schedule");
+
 
 describe('ScheduleService.createSchedule', () => {
 
@@ -15,38 +18,35 @@ describe('ScheduleService.createSchedule', () => {
     created_at: '2025-05-08T09:00:00'
   };
   
-  it('should return 201 and schedule data if creation is successful', async () => {
-    
-    db.query.mockResolvedValue({ rows: [mockSchedule] });
+  it('活動建立成功，回傳成功訊息', async () => {
+  
+    Schedule.findEvent.mockResolvedValue({ rows: [] });
+    db.query.mockReturnValueOnce({rows: [mockSchedule]});
 
     const result = await ScheduleService.createSchedule(
       1, 'Meeting', 'Discuss project', '2025-05-08T09:00:00', '2025-05-08T10:00:00'
     );
 
-    expect(result.message).toBe('Event created');
+    expect(result.message).toBe('活動建立成功');
     expect(result.schedule).toEqual(mockSchedule);
   });
 
-  it('should return error code if required fields are missing', async () => {
-    const result = await ScheduleService.createSchedule(null, '', '', '', '');
+  it('資料未提供，回傳錯誤訊息', async () => {
+    const result = await ScheduleService.createSchedule(null, '', '', '2025-05-08T09:00:00', '2025-05-08T10:00:00');
     expect(result.message).toBe('活動建立失敗，資料未提供');
     expect(result.error.code).toBe('E007_NOT_FOUND');
   });
 
-  it('should return error code if the time slot has a conflicting event', async () => {
+  it('重複時段建立活動，回傳錯誤訊息', async () => {
 
-    const result = await ScheduleService.createSchedule(
-      1, 'Meeting', 'Discuss project', '2025-05-08T09:00:00', '2025-05-08T10:00:00'
-    );
-
-    db.query.mockResolvedValueOnce({ rows: [mockSchedule] });
+    Schedule.findEvent.mockResolvedValue([mockSchedule]);
 
     const secResult = await ScheduleService.createSchedule(
       1, 'Repeat Meeting', 'Discuss project', '2025-05-08T09:00:00', '2025-05-08T10:00:00'
     );
 
     expect(secResult.message).toBe('活動建立失敗，時段重複');
-    expect(secResult.error.code).toBe('E004_UNAUTHORIZED');
+    expect(secResult.error.code).toBe('E006_SCHEDULE_CONFLICT');
   });
 
 
@@ -99,10 +99,8 @@ describe('ScheduleService.updateSchedule', () => {
       '2025-05-08 10:00:00',
       '2025-05-08 11:00:00'
     );
-
-    expect(res.status).toBe(200);
     expect(result.message).toBe('活動更新成功');
-    expect(result.data.schedule).toEqual(mockSchedule);
+    expect(result.schedule).toEqual(mockSchedule);
   });
 
   it('should return 404 if schedule not found or does not belong to user', async () => {
@@ -112,7 +110,7 @@ describe('ScheduleService.updateSchedule', () => {
       1, 99, 'New Title', 'desc', '2025-05-08 10:00:00', '2025-05-08 11:00:00'
     );
 
-    expect(res.body.message).toBe('找不到該行事曆或權限不足');
+    expect(res.message).toBe('找不到該行事曆或權限不足');
   });
 
   it('should throw error if database fails', async () => {
@@ -133,7 +131,7 @@ describe('ScheduleService.deleteSchedule', () => {
 
     const result = await ScheduleService.deleteSchedule(1, 1);
 
-    expect(result.message).toBe('Schedule deleted');
+    expect(result.message).toBe('活動刪除成功');
   });
 
   it('should return 404 if schedule does not belong to user', async () => {

@@ -1,12 +1,40 @@
 const db = require('../db');
+const validator = require("../utils/validator");
+const Schedule = require("../models/Schedule")
 
 class ScheduleService {
   static async createSchedule(user_id, title, description, start_time, end_time) {
-    ;
+
+    const validateDateTimeSRe = validator.validateDateTime(start_time);
+    const validateDateTimeERe = validator.validateDateTime(end_time);
+
+    if (!validateDateTimeSRe || !validateDateTimeERe) {
+      return {
+        message: "活動建立失敗，資料格式錯誤",
+        error: {
+          code: "E011_DATA_TYPE_ERROR"
+        }
+      }
+    }
+
+
     if (!user_id || !title || !start_time || !end_time) {
       return {
-        status: 400,
-        body: { message: 'Missing required fields' }
+        message: '活動建立失敗，資料未提供',
+        error: {
+          code: "E007_NOT_FOUND"
+        }
+      };
+    }
+
+    const repeatChk = await Schedule.findEvent(user_id, start_time, end_time, "id");
+
+    if (repeatChk.length > 0) {
+      return {
+        message: '活動建立失敗，時段重複',
+        error: {
+          code: "E006_SCHEDULE_CONFLICT"
+        }
       };
     }
 
@@ -19,17 +47,16 @@ class ScheduleService {
       );
 
       return {
-        status: 201,
-        body: {
-          message: 'Event created',
-          schedule: result.rows[0]
-        }
+        message: '活動建立成功',
+        schedule: result.rows[0]
       };
     } catch (err) {
       console.error('Schedule creation error:', err);
       return {
-        status: 400,
-        body: { message: '伺服器回傳錯誤訊息' }
+        message: '功能異常',
+        error: {
+          code: "E010_SCHEDULE_SERVER"
+        }
       };
     }
   }
@@ -56,8 +83,7 @@ class ScheduleService {
 
       if (rows.length === 0) {
         return {
-          status: 404,
-          body: { message: '找不到該行事曆或權限不足' }
+          message: '找不到該行事曆或權限不足'
         };
       }
 
@@ -70,11 +96,8 @@ class ScheduleService {
       );
 
       return {
-        status: 200,
-        body: {
-          message: 'Schedule updated',
-          schedule: updated.rows[0]
-        }
+        message: '活動更新成功',
+        schedule: updated.rows[0]
       };
     } catch (err) {
       console.error('UpdateSchedule service error:', err);
@@ -92,16 +115,18 @@ class ScheduleService {
 
       if (rows.length === 0) {
         return {
-          status: 404,
-          body: { message: '找不到該行事曆或權限不足' },
-        };
+          message: '找不到該行事曆或權限不足',
+          error: {
+            code: "007_NOT_FOUND"
+          }
+        }
+          ;
       }
 
       await db.query('DELETE FROM schedules WHERE id = $1', [schedule_id]);
 
       return {
-        status: 200,
-        body: { message: 'Schedule deleted' },
+        message: '活動刪除成功',
       };
     } catch (err) {
       console.error('DeleteSchedule service error:', err);

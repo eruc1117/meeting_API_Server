@@ -26,3 +26,21 @@ describe('validateEmail', () => {
     expect(validator.validateEmail(invalidEmail)).toBe(false);
   });
 });
+
+describe('isValidDateTimeString', () => {
+  it('should return true for valid ISO 8601 datetime string', () => {
+    expect(validator.validateDateTime('2025-05-24T09:00:00')).toBe(true);
+  });
+
+  it('should return false for empty string', () => {
+    expect(validator.validateDateTime('')).toBe(false);
+  });
+
+  it('should return false for completely invalid string', () => {
+    expect(validator.validateDateTime('not-a-date')).toBe(false);
+  });
+
+  it('should return false for date with invalid values', () => {
+    expect(validator.validateDateTime('2025-13-32T25:61:61')).toBe(false);
+  });
+});
