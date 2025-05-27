@@ -3,6 +3,10 @@ const app = require('../../app');
 const db = require('../../db');
 
 describe('POST /api/auth/register', () => {
+  afterAll(async () => {
+    await db.query("DELETE FROM users WHERE email IN ('user@example.com', 'user2@example.com', 'user3@example.com', 'dup@example.com')");
+  });
+
   it('should register a new user successfully', async () => {
     const res = await request(app)
       .post('/api/auth/register')
@@ -13,15 +17,13 @@ describe('POST /api/auth/register', () => {
         password: 'password123',
         passwordChk: 'password123'
       });
-
     expect(res.statusCode).toBe(200);
     expect(res.body).toEqual({
       message: '使用者註冊成功',
       data: {
         user: expect.objectContaining({ id: expect.any(Number) }),
         token: expect.any(String)
-      },
-      error: {}
+      }
     });
   });
 
@@ -86,7 +88,7 @@ describe('POST /api/auth/register', () => {
 
     expect(res.statusCode).toBe(409);
     expect(res.body).toEqual({
-      message: '使用者已存在',
+      message: '註冊帳號已存在',
       data: {},
       error: { code: 'E001_USER_EXISTS' }
     });
@@ -94,8 +96,29 @@ describe('POST /api/auth/register', () => {
 });
 
 describe('POST /api/auth/login', () => {
+  let token;
+  let userId;
+  let userIno = {
+    email: 'sched@example.com',
+    username: 'schedule',
+    account: 'scheduser',
+    password: 'password123',
+    passwordChk: 'password123'
+  };
+
+  beforeAll(async () => {
+    const userRes = await request(app)
+      .post('/api/auth/register')
+      .send(userIno);
+
+    console.log("userRes ---> ", userRes.body);
+
+    token = userRes.body.data.token;
+    userId = userRes.body.data.user.id;
+  });
+
   afterAll(async () => {
-    await db.query("DELETE FROM users WHERE email IN ('user@example.com', 'user3@example.com', 'dup@example.com')");
+    await db.query(`DELETE FROM users WHERE id = $1`, [userId]);
     await db.end();
   });
 
@@ -103,22 +126,23 @@ describe('POST /api/auth/login', () => {
     const res = await request(app)
       .post('/api/auth/login')
       .send({
-        account: 'user@example.com',
-        password: 'password123'
+        account: userIno.account,
+        password: userIno.password
       });
+
+      console.log("res --> ", res.body)
 
     expect(res.statusCode).toBe(200);
     expect(res.body).toEqual({
       message: '登入成功',
       data: {
         user: expect.objectContaining({
-          id: expect.any(Number),
-          email: 'user@example.com',
-          username: expect.any(String)
+          id: userId,
+          email: userIno.email,
+          username: userIno.username
         }),
         token: expect.any(String)
-      },
-      error: {}
+      }
     });
   });
 
@@ -130,7 +154,7 @@ describe('POST /api/auth/login', () => {
         password: 'password123'
       });
 
-    expect(res.statusCode).toBe(401);
+    expect(res.statusCode).toBe(404);
     expect(res.body).toEqual({
       message: '登入失敗，帳號不存在',
       data: {},
@@ -142,7 +166,7 @@ describe('POST /api/auth/login', () => {
     const res = await request(app)
       .post('/api/auth/login')
       .send({
-        account: 'user@example.com',
+        account: userIno.account,
         password: 'wrongpassword'
       });
 

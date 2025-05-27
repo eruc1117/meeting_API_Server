@@ -1,9 +1,10 @@
 require('dotenv').config();
 // middlewares/ipWhitelist.js
-const allowedIPs = [process.env.SOURCEIP, process.env.POSTMAN]; // 可加入其他可信來源
+const allowedIPs = [process.env.SOURCEIP, process.env.POSTMAN, process.env.AUTOTEST]; // 可加入其他可信來源
 
 module.exports = function ipWhitelist(req, res, next) {
   const ip = req.ip || req.connection.remoteAddress;
+
   if (allowedIPs.includes(ip)) {
     return next();
   }

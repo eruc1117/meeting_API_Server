@@ -26,15 +26,10 @@ describe('AuthController.register', () => {
     };
 
     const mockResult = {
-      status: 201,
-      body: {
-        "message": "使用者註冊成功",
-        "data": {
-          "user": { "id": 1 },
-          "token": "JWT-TOKEN"
-        },
-        "error": {
-        }
+      message: '使用者註冊成功',
+      data: {
+        user: { id: 1 },
+        token: "jwt-token"
       }
     };
 
@@ -44,9 +39,9 @@ describe('AuthController.register', () => {
     await AuthController.register(req, res);
 
     // Assert
-    expect(AuthService.register).toHaveBeenCalledWith(mockUserInfo.email, mockUserInfo.account, mockUserInfo.username, mockUserInfo.password, mockUserInfo.passwordChk);
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith(mockResult.body);
+    expect(AuthService.register).toHaveBeenCalledWith(mockUserInfo.email, mockUserInfo.username, mockUserInfo.account, mockUserInfo.password, mockUserInfo.passwordChk);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(mockResult);
   });
 
   it('should return 400 if email format is invalid', async () => {
@@ -66,24 +61,18 @@ describe('AuthController.register', () => {
     };
 
     const mockResult = {
-      status: 400,
-      body: {
-        "message": "電子信箱格式錯誤",
-        "data": {
-        },
-        "error": {
-          "code": "E002_INVALID_EMAIL"
-        }
-      }
+      message: '電子信箱格式錯誤',
+      data: {},
+      error: { code: 'E002_INVALID_EMAIL' }
     };
 
     AuthService.register.mockResolvedValue(mockResult);
 
     await AuthController.register(req, res);
 
-    expect(AuthService.register).toHaveBeenCalledWith(req.body.email, req.body.account, req.body.username, req.body.password, req.body.passwordChk);
+    expect(AuthService.register).toHaveBeenCalledWith(mockUserInfo.email, mockUserInfo.username, mockUserInfo.account, mockUserInfo.password, mockUserInfo.passwordChk);
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith(mockResult.body);
+    expect(res.json).toHaveBeenCalledWith(mockResult);
   });
 
   it('should return 409 if user already exists', async () => {
@@ -97,24 +86,18 @@ describe('AuthController.register', () => {
     };
 
     const mockResult = {
-      status: 409,
-      body: {
-        "message": "使用者已存在",
-        "data": {
-        },
-        "error": {
-          "code": "E001_USER_EXISTS"
-        }
-      }
+      message: '註冊帳號已存在',
+      data: {},
+      error: { code: 'E001_USER_EXISTS' }
     };
 
     AuthService.register.mockResolvedValue(mockResult);
 
     await AuthController.register(req, res);
 
-    expect(AuthService.register).toHaveBeenCalledWith(req.body.email, req.body.account, req.body.username, req.body.password, req.body.passwordChk);
+    expect(AuthService.register).toHaveBeenCalledWith(mockUserInfo.email, mockUserInfo.username, mockUserInfo.account, mockUserInfo.password, mockUserInfo.passwordChk);
     expect(res.status).toHaveBeenCalledWith(409);
-    expect(res.json).toHaveBeenCalledWith(mockResult.body);
+    expect(res.json).toHaveBeenCalledWith(mockResult);
   });
 
   it('should return an error if the password does not match during checkPassword', async () => {
@@ -134,24 +117,18 @@ describe('AuthController.register', () => {
     };
 
     const mockResult = {
-      status: 400,
-      body: {
-        "message": "密碼和確認密碼不同",
-        "data": {
-        },
-        "error": {
-          "code": "E009_PASSWORD_NOT_SAME"
-        }
-      }
+      message: '密碼和確認密碼不同',
+      data: {},
+      error: { code: 'E009_PASSWORD_NOT_SAME' }
     };
 
     AuthService.register.mockResolvedValue(mockResult);
 
     await AuthController.register(req, res);
 
-    expect(AuthService.register).toHaveBeenCalledWith(req.body.email, req.body.account, req.body.username, req.body.password, req.body.passwordChk);
+    expect(AuthService.register).toHaveBeenCalledWith(mockUserInfo.email, mockUserInfo.username, mockUserInfo.account, mockUserInfo.password, mockUserInfo.passwordChk);
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith(mockResult.body);
+    expect(res.json).toHaveBeenCalledWith(mockResult);
   });
 
 });
@@ -171,19 +148,20 @@ describe('AuthController.login', () => {
     };
 
     AuthService.login.mockResolvedValue({
-      status: 200,
-      body: {
-        message: 'Login successful',
-        user: { id: 1, email: 'user@example.com', username: 'username' },
-        token: 'JWT-TOKEN'
-      }
+      message: '登入成功',
+      user: {
+        id: 1,
+        email: "user@example.com",
+        username: "username"
+      },
+      token: "jwt-token"
     });
 
     await AuthController.login(req, res);
 
     expect(AuthService.login).toHaveBeenCalledWith('user@example.com', 'password123');
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'Login successful' }));
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: '登入成功' }));
   });
 
   it('should return error if user is not exist ', async () => {
@@ -198,22 +176,18 @@ describe('AuthController.login', () => {
       json: jest.fn()
     };
 
-    AuthService.login.mockResolvedValue({
-      status: 401,
-      body: {
-        "message": "登入失敗，帳號不存在",
-        "data" : {
-        },
-        "error": {
-          "code" : "E008_ACCOUNT_NOT_EXIST"
-        }
+    const mockResult = {
+      message: '登入失敗，帳號不存在',
+      error: {
+        code: "E008_ACCOUNT_NOT_EXIST"
       }
-    });
+    };
+
+    AuthService.login.mockResolvedValue(mockResult);
 
     await AuthController.login(req, res);
-    expect(res.status).toBe(401);
-    expect(res.body.message).toBe('登入失敗，帳號不存在');
-    expect(res.body.error.code).toBe('E008_ACCOUNT_NOT_EXIST');
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith(mockResult);
   });
 
   it('should return 401 if user not found or password incorrect', async () => {
@@ -228,22 +202,18 @@ describe('AuthController.login', () => {
       json: jest.fn()
     };
 
-    AuthService.login.mockResolvedValue({
-      status: 401,
-      body: {
-        "message": "登入失敗，帳號密碼錯誤",
-        "data" : {
-        },
-        "error": {
-          "code" : "E003_INVALID_CREDENTIALS"
-        }
+    const mockResult = {
+      message: '登入失敗，帳號密碼錯誤',
+      error: {
+        code: "E003_INVALID_CREDENTIALS"
       }
-    });
+    };
+
+    AuthService.login.mockResolvedValue(mockResult);
 
     await AuthController.login(req, res);
-    expect(res.status).toBe(401);
-    expect(res.body.message).toBe('登入失敗，帳號密碼錯誤');
-    expect(res.body.error.code).toBe('E003_INVALID_CREDENTIALS');
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith(mockResult);
   });
 
 });

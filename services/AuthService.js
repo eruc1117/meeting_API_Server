@@ -25,8 +25,6 @@ class AuthService {
 
       const existingUser = await User.findByEmailOrUsername(email, account);
 
-      console.log("test ---> ", existingUser);
-
       if (existingUser) {
         return {
           message: '註冊帳號已存在',
@@ -46,17 +44,13 @@ class AuthService {
           user: { id: newUserId },
           token
         },
-        error: {}
       };
     } catch (error) {
       console.error('register error --->', error);
       return {
-        status: 500,
-        body: {
-          message: 'Internal server error',
-          data: {},
-          error: { code: 'E000_INTERNAL_ERROR' }
-        }
+        message: '伺服器錯誤',
+        data: {},
+        error: { code: 'E000_INTERNAL_ERROR' }
       };
     }
   }
@@ -64,7 +58,7 @@ class AuthService {
 
   static async login(account, password) {
     try {
-      const user = await User.findByEmailOrUsername(account, account);
+      const user = await User.findByEmailOrUsername(account, account, account);
       if (!user) {
         return {
           message: '登入失敗，帳號不存在',
@@ -87,7 +81,7 @@ class AuthService {
       const token = jwt.sign({ id: user.id }, process.env.SECRET, { expiresIn: '1h' });
 
       return {
-        message: 'Login successful',
+        message: '登入成功',
         user: {
           id: user.id,
           email: user.email,

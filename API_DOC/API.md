@@ -42,7 +42,7 @@
 
 ```json
 {
-  "message": "使用者已存在",
+  "message": "註冊帳號已存在",
   "data" : {
   },
   "error": {
@@ -116,7 +116,7 @@
   }
 }
 ```
-####  失敗 (401 Unauthorized):
+####  失敗 (404 Unauthorized):
 
 ```json
 {

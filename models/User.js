@@ -1,10 +1,10 @@
 const db = require('../db');
 
 class User {
-  static async findByEmailOrUsername(email, username) {
+  static async findByEmailOrUsername(email, username, account) {
     const result = await db.query(
-      'SELECT * FROM users WHERE email = $1 OR username = $2',
-      [email, username]
+      'SELECT * FROM users WHERE email = $1 OR username = $2 OR account = $3',
+      [email, username, account]
     );
     return result.rows[0];
   }
