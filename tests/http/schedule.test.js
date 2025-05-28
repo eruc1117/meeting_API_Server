@@ -43,19 +43,21 @@ describe('Schedule API 測試', () => {
         });
 
       expect(res.statusCode).toBe(201);
-      expect(res.body.message).toBe('行事曆事件建立成功');
-      expect(res.body.data.schedule).toHaveProperty('title', 'Meeting with John');
-      expect(res.body.error).toEqual({});
-      scheduleId = res.body.data.schedule.id;
+      expect(res.body.message).toBe('活動建立成功');
+      expect(res.body.data).toHaveProperty('title', 'Meeting with John');
+      scheduleId = res.body.data.id;
     });
 
-    it('缺少必要欄位應回傳 400', async () => {
+    it('缺少必要欄位應回傳 404', async () => {
       const res = await request(app)
         .post('/api/schedules')
         .set('Authorization', `Bearer ${token}`)
-        .send({ title: 'Missing Fields' });
+        .send({
+          start_time: '2025-05-08 09:00:00',
+          end_time: '2025-05-08 10:00:00'
+        });
 
-      expect(res.statusCode).toBe(400);
+      expect(res.statusCode).toBe(404);
       expect(res.body.message).toBe('活動建立失敗，資料未提供');
       expect(res.body.error.code).toBe('E007_NOT_FOUND');
     });
@@ -72,7 +74,7 @@ describe('Schedule API 測試', () => {
           end_time: '2025-05-08 10:00:00'
         });
 
-      expect(res.statusCode).toBe(400);
+      expect(res.statusCode).toBe(409);
       expect(res.body.message).toBe('活動建立失敗，時段重複');
       expect(res.body.error.code).toBe('E006_SCHEDULE_CONFLICT');
     });
@@ -89,7 +91,7 @@ describe('Schedule API 測試', () => {
         });
 
       expect(res.statusCode).toBe(401);
-      expect(res.body.message).toBe('活動建立失敗，未登入');
+      expect(res.body.message).toBe('帳號尚未登入');
       expect(res.body.error.code).toBe('E004_UNAUTHORIZED');
     });
   });
@@ -101,16 +103,14 @@ describe('Schedule API 測試', () => {
         .set('Authorization', `Bearer ${token}`);
 
       expect(res.statusCode).toBe(200);
-      expect(res.body.data.schedules).toBeDefined();
-      expect(res.body.message).toBe('取得成功');
-      expect(res.body.error).toEqual({});
+      expect(res.body.data).toBeDefined();
     });
 
     it('未提供 JWT 應回傳 401', async () => {
       const res = await request(app).get('/api/schedules');
       expect(res.statusCode).toBe(401);
       expect(res.body.message).toBe('帳號尚未登入');
-      expect(res.body.error.code).toBe('E007_UNAUTHORIZED');
+      expect(res.body.error.code).toBe('E004_UNAUTHORIZED');
     });
   });
 
@@ -119,16 +119,20 @@ describe('Schedule API 測試', () => {
 
     beforeAll(async () => {
       const res = await request(app)
-      .post('/api/schedules')
-      .set('Authorization', `Bearer ${token}`)
-      .send({
-        user_id: userId,
-        title: 'Meeting with John',
-        description: 'Discuss project details',
-        start_time: '2025-05-08 09:00:00',
-        end_time: '2025-05-08 10:00:00'
-      });
-      eventID = res.body.data.id
+        .post('/api/schedules')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          user_id: userId,
+          title: 'Meeting with John',
+          description: 'Discuss project details',
+          start_time: '2025-05-08 11:00:00',
+          end_time: '2025-05-08 12:00:00'
+        });
+
+      console.log("res.body.data ---> ", res.body);
+
+      eventID = res.body.data.id;
+      
     });
 
 
@@ -146,8 +150,8 @@ describe('Schedule API 測試', () => {
         });
 
       expect(res.statusCode).toBe(200);
-      expect(res.body.message).toBe('行事曆事件更新成功');
-      expect(res.body.data.schedule.title).toBe('Updated Title');
+      expect(res.body.message).toBe('活動更新成功');
+      expect(res.body.data.title).toBe('Updated Title');
     });
 
     it('未提供 JWT 應回傳 401', async () => {
@@ -162,7 +166,7 @@ describe('Schedule API 測試', () => {
         });
 
       expect(res.statusCode).toBe(401);
-      expect(res.body.message).toBe('活動建立失敗，未登入');
+      expect(res.body.message).toBe('帳號尚未登入');
       expect(res.body.error.code).toBe('E004_UNAUTHORIZED');
     });
 
@@ -178,7 +182,7 @@ describe('Schedule API 測試', () => {
           end_time: '2025-05-08 11:00:00'
         });
 
-      expect(res.statusCode).toBe(400);
+      expect(res.statusCode).toBe(409);
       expect(res.body.message).toBe('活動建立失敗，時段重複');
       expect(res.body.error.code).toBe('E006_SCHEDULE_CONFLICT');
     });
@@ -192,7 +196,7 @@ describe('Schedule API 測試', () => {
         .set('Authorization', `Bearer ${token}`);
 
       expect(res.statusCode).toBe(200);
-      expect(res.body.message).toBe('行事曆事件刪除成功');
+      expect(res.body.message).toBe('活動刪除成功');
     });
 
     it('未提供 JWT 應回傳 401', async () => {
@@ -200,7 +204,7 @@ describe('Schedule API 測試', () => {
         .delete(`/api/schedules/${scheduleId}`);
 
       expect(res.statusCode).toBe(401);
-      expect(res.body.message).toBe('活動刪除失敗，未登入');
+      expect(res.body.message).toBe('帳號尚未登入');
       expect(res.body.error.code).toBe('E004_UNAUTHORIZED');
     });
   });

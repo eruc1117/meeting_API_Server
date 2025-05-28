@@ -111,7 +111,6 @@ describe('POST /api/auth/login', () => {
       .post('/api/auth/register')
       .send(userIno);
 
-    console.log("userRes ---> ", userRes.body);
 
     token = userRes.body.data.token;
     userId = userRes.body.data.user.id;
@@ -129,8 +128,6 @@ describe('POST /api/auth/login', () => {
         account: userIno.account,
         password: userIno.password
       });
-
-      console.log("res --> ", res.body)
 
     expect(res.statusCode).toBe(200);
     expect(res.body).toEqual({

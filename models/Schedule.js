@@ -5,7 +5,7 @@ class Schedule {
         const result = await db.query(
             `
             SELECT ${returnCol} FROM schedules 
-            WHERE user_id = $1 and  start_time > $2 and end_time < $3
+            WHERE user_id = $1 and  start_time >= $2 and end_time <= $3
             `,
             [userId, startTime, endTime]
         );

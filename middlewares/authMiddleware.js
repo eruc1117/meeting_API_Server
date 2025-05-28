@@ -6,7 +6,7 @@ const authMiddleware = (req, res, next) => {
 
   // 檢查是否有 Bearer token
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ message: '帳號尚未登入' });
+    return res.status(401).json({ message: '帳號尚未登入', error: { code: "E004_UNAUTHORIZED" } });
   }
 
   const token = authHeader.split(' ')[1];

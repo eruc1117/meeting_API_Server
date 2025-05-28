@@ -192,7 +192,7 @@ Authorization: Bearer <JWT-TOKEN>
 }
 ```
 
-#### 失敗 1：(400 Bad Request):
+#### 失敗 1：(404 Bad Request):
 
 ```json
 
@@ -209,7 +209,7 @@ Authorization: Bearer <JWT-TOKEN>
 
 ```json
 {
-  "message": "活動建立失敗，未登入",
+  "message": "帳號尚未登入",
   "data" : {},
   "error": {
     "code" : "E004_UNAUTHORIZED"
@@ -299,7 +299,7 @@ Authorization: Bearer <JWT-TOKEN>
 
 ```json
 {
-  "message": "活動查詢失敗，未登入",
+  "message": "帳號尚未登入",
   "data" : {},
   "error": {
     "code" : "E004_UNAUTHORIZED"
@@ -358,7 +358,7 @@ Authorization: Bearer <JWT-TOKEN>
 
 ```json
 {
-  "message": "活動建立失敗，未登入",
+  "message": "帳號尚未登入",
   "data" : {},
   "error": {
     "code" : "E004_UNAUTHORIZED"
@@ -418,7 +418,7 @@ Authorization: Bearer <JWT-TOKEN>
 
 ```json
 {
-  "message": "活動刪除失敗，未登入",
+  "message": "帳號尚未登入",
   "data" : {},
   "error": {
     "code" : "E004_UNAUTHORIZED"

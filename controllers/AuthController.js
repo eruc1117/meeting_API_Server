@@ -28,7 +28,6 @@ class AuthController {
 
   static async login(req, res) {
     const { account, password } = req.body;
-    console.log("account, password", account, password)
     const result = await AuthService.login(account, password);
     let status;
     let returnBody = {
