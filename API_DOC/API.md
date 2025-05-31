@@ -373,7 +373,7 @@ Authorization: Bearer <JWT-TOKEN>
   "message": "活動更新失敗，時段重複",
   "data" : {
     "reStartTime": "",
-    "reEndTime": ""
+    "reEndTime": "" 
   },
   "error": {
     "code" : "E006_SCHEDULE_CONFLICT"
