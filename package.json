@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "migrate": "node-pg-migrate up",
+    "migrate": "node-pg-migrate",
+    "migrate:up": "node-pg-migrate up",
     "migrate:down": "node-pg-migrate down",
     "test": "jest --verbose",
     "test:db": "jest tests/db --verbose",

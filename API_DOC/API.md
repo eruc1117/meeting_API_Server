@@ -426,6 +426,99 @@ Authorization: Bearer <JWT-TOKEN>
 }
 ```
 
+
+### 2.5 參加行事曆事件（POST /api/schedules/attend/:id）
+##### 描述
+用戶參加行事曆活動。
+
+- **請求** URL: /api/schedules/attend/:id
+- **方法**: POST
+
+回應
+成功 (200 OK):
+
+```json
+{
+  "message": "活動參加成功",
+  "data" : {
+  },
+  "error": {
+  }
+}
+```
+
+#### 失敗 1：(400 Bad Request):
+
+```json
+
+{
+  "message": "活動參加失敗",
+  "data" : {},
+  "error": {
+    "code" : "E007_NOT_FOUND"
+  }
+}
+```
+
+#### 失敗 2：(401 Bad Request):
+
+```json
+{
+  "message": "帳號尚未登入",
+  "data" : {},
+  "error": {
+    "code" : "E004_UNAUTHORIZED"
+  }
+}
+```
+
+### 2.6 退出行事曆事件（POST /api/schedules/attend/:id）
+##### 描述
+用戶參加行事曆活動。
+
+- **請求** URL: /api/schedules/attend/:id
+- **方法**: POST
+
+回應
+成功 (200 OK):
+
+```json
+{
+  "message": "活動退出成功",
+  "data" : {
+  },
+  "error": {
+  }
+}
+```
+
+#### 失敗 1：(400 Bad Request):
+
+```json
+
+{
+  "message": "活動退出失敗",
+  "data" : {},
+  "error": {
+    "code" : "E007_NOT_FOUND"
+  }
+}
+```
+
+#### 失敗 2：(401 Bad Request):
+
+```json
+{
+  "message": "帳號尚未登入",
+  "data" : {},
+  "error": {
+    "code" : "E004_UNAUTHORIZED"
+  }
+}
+```
+
+
+
 ## 3. 聊天室 API
 ### 3.1 創建聊天室（POST /api/groups）
 #### 描述

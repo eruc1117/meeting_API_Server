@@ -5,6 +5,8 @@ const allowedIPs = [process.env.SOURCEIP, process.env.POSTMAN, process.env.AUTOT
 module.exports = function ipWhitelist(req, res, next) {
   const ip = req.ip || req.connection.remoteAddress;
 
+  console.log("ip ---> ", ip);
+
   if (allowedIPs.includes(ip)) {
     return next();
   }
