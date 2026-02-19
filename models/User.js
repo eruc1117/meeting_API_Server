@@ -17,6 +17,13 @@ class User {
     return result.rows[0];
   }
 
+  static async updatePassword(account, newPasswordHash) {
+    await db.query(
+      'UPDATE users SET password_hash = $1 WHERE email = $2 OR username = $2 OR account = $2',
+      [newPasswordHash, account]
+    );
+  }
+
   static async create(email, username, account, passwordHash) {
     const result = await db.query(
       'INSERT INTO users (email, username, account, password_hash) VALUES ($1, $2, $3, $4) RETURNING id',

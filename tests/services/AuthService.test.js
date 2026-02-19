@@ -60,6 +60,47 @@ describe('AuthService.register', () => {
 });
 
 
+describe('AuthService.updatePassword', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should return success when account and old password are correct', async () => {
+    const mockUser = { id: 1, password_hash: 'hashedpw' };
+    User.findByAccount.mockResolvedValue(mockUser);
+    bcrypt.compare.mockResolvedValue(true);
+    bcrypt.hash.mockResolvedValue('newHashedpw');
+    User.updatePassword = jest.fn().mockResolvedValue();
+
+    const result = await AuthService.updatePassword('user@example.com', 'oldPass', 'newPass');
+
+    expect(result.message).toBe('更新成功');
+    expect(result.data).toEqual({});
+    expect(bcrypt.compare).toHaveBeenCalledWith('oldPass', 'hashedpw');
+    expect(bcrypt.hash).toHaveBeenCalledWith('newPass', 10);
+  });
+
+  it('should return E003 if account does not exist', async () => {
+    User.findByAccount.mockResolvedValue(null);
+
+    const result = await AuthService.updatePassword('wrong@example.com', 'oldPass', 'newPass');
+
+    expect(result.message).toBe('更新失敗，帳號密碼錯誤');
+    expect(result.error.code).toBe('E003_INVALID_CREDENTIALS');
+  });
+
+  it('should return E003 if old password is incorrect', async () => {
+    User.findByAccount.mockResolvedValue({ id: 1, password_hash: 'hashedpw' });
+    bcrypt.compare.mockResolvedValue(false);
+
+    const result = await AuthService.updatePassword('user@example.com', 'wrongPass', 'newPass');
+
+    expect(result.message).toBe('更新失敗，帳號密碼錯誤');
+    expect(result.error.code).toBe('E003_INVALID_CREDENTIALS');
+  });
+});
+
+
 describe('AuthService.login', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -78,10 +119,11 @@ describe('AuthService.login', () => {
 
     const result = await AuthService.login('user@example.com', 'password123');
 
-    expect(result.token).toBe('mock-token');
-    expect(result.user.id).toBe(mockUser.id);
-    expect(result.user.email).toBe(mockUser.email);
-    expect(result.user.username).toBe(mockUser.username);
+    expect(result.message).toBe('登入成功');
+    expect(result.data.token).toBe('mock-token');
+    expect(result.data.user.id).toBe(mockUser.id);
+    expect(result.data.user.email).toBe(mockUser.email);
+    expect(result.data.user.username).toBe(mockUser.username);
     expect(User.findByAccount).toHaveBeenCalledWith('user@example.com');
     expect(bcrypt.compare).toHaveBeenCalledWith('password123', 'hashedpw');
   });
@@ -90,6 +132,7 @@ describe('AuthService.login', () => {
     User.findByAccount.mockResolvedValue(null);
     const result = await AuthService.login('wrong@example.com', '123');
     expect(result.message).toBe('登入失敗，帳號不存在');
+    expect(result.data).toEqual({});
     expect(result.error.code).toBe('E008_ACCOUNT_NOT_EXIST');
   });
 
@@ -98,6 +141,7 @@ describe('AuthService.login', () => {
     bcrypt.compare.mockResolvedValue(false);
     const result = await AuthService.login('user@example.com', '123');
     expect(result.message).toBe('登入失敗，帳號密碼錯誤');
+    expect(result.data).toEqual({});
     expect(result.error.code).toBe('E003_INVALID_CREDENTIALS');
   });
 });

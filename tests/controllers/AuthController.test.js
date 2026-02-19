@@ -119,6 +119,52 @@ describe('AuthController.register', () => {
 });
 
 
+describe('AuthController.updatePassword', () => {
+  const mockReq = {
+    body: {
+      account: 'user@example.com',
+      oirPassword: 'oldPass123',
+      newPassword: 'newPass456'
+    }
+  };
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should return 200 on successful password update', async () => {
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const mockResult = { message: '更新成功', data: {} };
+
+    AuthService.updatePassword.mockResolvedValue(mockResult);
+
+    await AuthController.updatePassword(mockReq, res);
+
+    expect(AuthService.updatePassword).toHaveBeenCalledWith(
+      mockReq.body.account, mockReq.body.oirPassword, mockReq.body.newPassword
+    );
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(mockResult);
+  });
+
+  it('should return 401 if account or old password is incorrect', async () => {
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const mockResult = {
+      message: '更新失敗，帳號密碼錯誤',
+      data: {},
+      error: { code: 'E003_INVALID_CREDENTIALS' }
+    };
+
+    AuthService.updatePassword.mockResolvedValue(mockResult);
+
+    await AuthController.updatePassword(mockReq, res);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith(mockResult);
+  });
+});
+
+
 describe('AuthController.login', () => {
 
   afterEach(() => {
@@ -131,8 +177,10 @@ describe('AuthController.login', () => {
 
     const mockResult = {
       message: '登入成功',
-      user: { id: 1, email: 'user@example.com', username: 'username' },
-      token: 'jwt-token'
+      data: {
+        user: { id: 1, email: 'user@example.com', username: 'username' },
+        token: 'jwt-token'
+      }
     };
 
     AuthService.login.mockResolvedValue(mockResult);

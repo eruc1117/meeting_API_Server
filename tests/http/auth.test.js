@@ -95,6 +95,77 @@ describe('POST /api/auth/register', () => {
   });
 });
 
+describe('PUT /api/auth/updatePassword', () => {
+  const userInfo = {
+    email: 'pwupdate@example.com',
+    username: 'pwupdate',
+    account: 'pwupdateuser',
+    password: 'oldPassword123',
+    passwordChk: 'oldPassword123'
+  };
+  let userId;
+
+  beforeAll(async () => {
+    const res = await request(app).post('/api/auth/register').send(userInfo);
+    userId = res.body.data.user.id;
+  });
+
+  afterAll(async () => {
+    await db.query('DELETE FROM users WHERE id = $1', [userId]);
+  });
+
+  it('should return 200 on successful password update', async () => {
+    const res = await request(app)
+      .put('/api/auth/updatePassword')
+      .send({
+        account: userInfo.account,
+        oirPassword: userInfo.password,
+        newPassword: 'newPassword456'
+      });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({
+      message: '更新成功',
+      data: {}
+    });
+  });
+
+  it('should return 401 if old password is incorrect', async () => {
+    const res = await request(app)
+      .put('/api/auth/updatePassword')
+      .send({
+        account: userInfo.account,
+        oirPassword: 'wrongPassword',
+        newPassword: 'newPassword456'
+      });
+
+    expect(res.statusCode).toBe(401);
+    expect(res.body).toEqual({
+      message: '更新失敗，帳號密碼錯誤',
+      data: {},
+      error: { code: 'E003_INVALID_CREDENTIALS' }
+    });
+  });
+
+  it('should return 401 if account does not exist', async () => {
+    const res = await request(app)
+      .put('/api/auth/updatePassword')
+      .send({
+        account: 'nonexistent',
+        oirPassword: 'anyPassword',
+        newPassword: 'newPassword456'
+      });
+
+    expect(res.statusCode).toBe(401);
+    expect(res.body).toEqual({
+      message: '更新失敗，帳號密碼錯誤',
+      data: {},
+      error: { code: 'E003_INVALID_CREDENTIALS' }
+    });
+  });
+});
+
+
 describe('POST /api/auth/login', () => {
   let token;
   let userId;
@@ -107,17 +178,17 @@ describe('POST /api/auth/login', () => {
   };
 
   beforeAll(async () => {
+    await db.query(`DELETE FROM users WHERE email = $1`, [userIno.email]);
     const userRes = await request(app)
       .post('/api/auth/register')
       .send(userIno);
-
 
     token = userRes.body.data.token;
     userId = userRes.body.data.user.id;
   });
 
   afterAll(async () => {
-    await db.query(`DELETE FROM users WHERE id = $1`, [userId]);
+    await db.query(`DELETE FROM users WHERE email = $1`, [userIno.email]);
     await db.end();
   });
 

@@ -13,6 +13,17 @@ class AuthController {
     }
   }
 
+  static async updatePassword(req, res) {
+    try {
+      const { account, oirPassword, newPassword } = req.body;
+      const result = await AuthService.updatePassword(account, oirPassword, newPassword);
+      sendResponse(res, result, 200);
+    } catch (error) {
+      console.error('updatePassword ---> ', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
   static async login(req, res) {
     try {
       const { account, password } = req.body;

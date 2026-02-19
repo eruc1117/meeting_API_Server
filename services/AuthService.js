@@ -62,9 +62,8 @@ class AuthService {
       if (!user) {
         return {
           message: '登入失敗，帳號不存在',
-          error: {
-            code: 'E008_ACCOUNT_NOT_EXIST'
-          }
+          data: {},
+          error: { code: 'E008_ACCOUNT_NOT_EXIST' }
         };
       }
 
@@ -72,9 +71,8 @@ class AuthService {
       if (!isMatch) {
         return {
           message: '登入失敗，帳號密碼錯誤',
-          error: {
-            code: 'E003_INVALID_CREDENTIALS'
-          }
+          data: {},
+          error: { code: 'E003_INVALID_CREDENTIALS' }
         };
       }
 
@@ -82,18 +80,59 @@ class AuthService {
 
       return {
         message: '登入成功',
-        user: {
-          id: user.id,
-          email: user.email,
-          username: user.username
-        },
-        token
+        data: {
+          user: {
+            id: user.id,
+            email: user.email,
+            username: user.username
+          },
+          token
+        }
       };
 
     } catch (error) {
       console.error('login error --> ', error);
       return {
         message: '伺服器錯誤',
+        data: {},
+        error: { code: 'E000_INTERNAL_ERROR' }
+      };
+    }
+  }
+
+  static async updatePassword(account, oirPassword, newPassword) {
+    try {
+      const user = await User.findByAccount(account);
+
+      if (!user) {
+        return {
+          message: '更新失敗，帳號密碼錯誤',
+          data: {},
+          error: { code: 'E003_INVALID_CREDENTIALS' }
+        };
+      }
+
+      const isMatch = await bcrypt.compare(oirPassword, user.password_hash);
+      if (!isMatch) {
+        return {
+          message: '更新失敗，帳號密碼錯誤',
+          data: {},
+          error: { code: 'E003_INVALID_CREDENTIALS' }
+        };
+      }
+
+      const newPasswordHash = await bcrypt.hash(newPassword, 10);
+      await User.updatePassword(account, newPasswordHash);
+
+      return {
+        message: '更新成功',
+        data: {}
+      };
+    } catch (error) {
+      console.error('updatePassword error --->', error);
+      return {
+        message: '伺服器錯誤',
+        data: {},
         error: { code: 'E000_INTERNAL_ERROR' }
       };
     }
