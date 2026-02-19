@@ -1,50 +1,27 @@
 const AuthService = require('../services/AuthService');
-const { mapErrorCodeToStatusCode } = require("../utils/httpStatusMapper")
+const { sendResponse } = require('../utils/responseHelper');
 
 class AuthController {
   static async register(req, res) {
     try {
       const { email, username, account, password, passwordChk } = req.body;
-      
       const result = await AuthService.register(email, username, account, password, passwordChk);
-      let status;
-      let returnBody = {
-        message: result.message,
-        data: result.data
-      }
-
-      if (result.error) {
-        status = mapErrorCodeToStatusCode(result.error.code)
-        returnBody["error"] = {code: result.error.code}
-      } else {
-        status = 200;
-      }
-
-      res.status(status).json(returnBody);
+      sendResponse(res, result, 200);
     } catch (error) {
-      console.log("register ---> ", error);
+      console.error('register ---> ', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
   }
 
   static async login(req, res) {
-    const { account, password } = req.body;
-    const result = await AuthService.login(account, password);
-    let status;
-    let returnBody = {
-      message: result.message,
-      data: {
-        user: result.user,
-        token: result.token
-      }
+    try {
+      const { account, password } = req.body;
+      const result = await AuthService.login(account, password);
+      sendResponse(res, result, 200);
+    } catch (error) {
+      console.error('login ---> ', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
-
-    if (result.error) {
-      status = mapErrorCodeToStatusCode(result.error.code)
-      returnBody["error"] = {code: result.error.code}
-    } else {
-      status = 200;
-    }
-    res.status(status).json(returnBody);
   }
 }
 

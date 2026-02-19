@@ -12,6 +12,7 @@ function mapErrorCodeToStatusCode(errorCode) {
         E009_PASSWORD_NOT_SAME: 400,
         E010_SCHEDULE_SERVER: 500,
         E011_DATA_TYPE_ERROR: 400,
+        E012_MISSING_FIELDS: 400,
     };
 
     return map[errorCode] || 500; // fallback to 500 if not found

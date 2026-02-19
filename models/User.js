@@ -9,6 +9,14 @@ class User {
     return result.rows[0];
   }
 
+  static async findByAccount(account) {
+    const result = await db.query(
+      'SELECT * FROM users WHERE email = $1 OR username = $1 OR account = $1',
+      [account]
+    );
+    return result.rows[0];
+  }
+
   static async create(email, username, account, passwordHash) {
     const result = await db.query(
       'INSERT INTO users (email, username, account, password_hash) VALUES ($1, $2, $3, $4) RETURNING id',

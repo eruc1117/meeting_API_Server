@@ -1,7 +1,6 @@
 const AuthController = require('../../controllers/AuthController');
 const AuthService = require('../../services/AuthService');
 
-// 模擬依賴
 jest.mock('../../services/AuthService');
 
 describe('AuthController.register', () => {
@@ -12,34 +11,29 @@ describe('AuthController.register', () => {
     username: 'username',
     password: 'password123',
     passwordChk: 'password123'
-  }
+  };
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
 
   it('should call AuthService.register and respond with correct status and body', async () => {
-    // Arrange
-    const req = {
-      body: mockUserInfo
-    };
-
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn()
-    };
+    const req = { body: mockUserInfo };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
     const mockResult = {
       message: '使用者註冊成功',
-      data: {
-        user: { id: 1 },
-        token: "jwt-token"
-      }
+      data: { user: { id: 1 }, token: 'jwt-token' }
     };
 
     AuthService.register.mockResolvedValue(mockResult);
 
-    // Act
     await AuthController.register(req, res);
 
-    // Assert
-    expect(AuthService.register).toHaveBeenCalledWith(mockUserInfo.email, mockUserInfo.username, mockUserInfo.account, mockUserInfo.password, mockUserInfo.passwordChk);
+    expect(AuthService.register).toHaveBeenCalledWith(
+      mockUserInfo.email, mockUserInfo.username, mockUserInfo.account,
+      mockUserInfo.password, mockUserInfo.passwordChk
+    );
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(mockResult);
   });
@@ -54,11 +48,7 @@ describe('AuthController.register', () => {
         passwordChk: 'password123'
       }
     };
-
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn()
-    };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
     const mockResult = {
       message: '電子信箱格式錯誤',
@@ -70,20 +60,15 @@ describe('AuthController.register', () => {
 
     await AuthController.register(req, res);
 
-    expect(AuthService.register).toHaveBeenCalledWith(mockUserInfo.email, mockUserInfo.username, mockUserInfo.account, mockUserInfo.password, mockUserInfo.passwordChk);
+    const { email, username, account, password, passwordChk } = req.body;
+    expect(AuthService.register).toHaveBeenCalledWith(email, username, account, password, passwordChk);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(mockResult);
   });
 
   it('should return 409 if user already exists', async () => {
-    const req = {
-      body: mockUserInfo
-    };
-
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn()
-    };
+    const req = { body: mockUserInfo };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
     const mockResult = {
       message: '註冊帳號已存在',
@@ -95,26 +80,25 @@ describe('AuthController.register', () => {
 
     await AuthController.register(req, res);
 
-    expect(AuthService.register).toHaveBeenCalledWith(mockUserInfo.email, mockUserInfo.username, mockUserInfo.account, mockUserInfo.password, mockUserInfo.passwordChk);
+    expect(AuthService.register).toHaveBeenCalledWith(
+      mockUserInfo.email, mockUserInfo.username, mockUserInfo.account,
+      mockUserInfo.password, mockUserInfo.passwordChk
+    );
     expect(res.status).toHaveBeenCalledWith(409);
     expect(res.json).toHaveBeenCalledWith(mockResult);
   });
 
-  it('should return an error if the password does not match during checkPassword', async () => {
+  it('should return 400 if password does not match', async () => {
     const req = {
       body: {
-        email: 'invalid-email',
+        email: 'user@example.com',
         account: 'account',
         username: 'username',
         password: 'password123',
         passwordChk: 'elsePassword'
       }
     };
-
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn()
-    };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
     const mockResult = {
       message: '密碼和確認密碼不同',
@@ -126,7 +110,8 @@ describe('AuthController.register', () => {
 
     await AuthController.register(req, res);
 
-    expect(AuthService.register).toHaveBeenCalledWith(mockUserInfo.email, mockUserInfo.username, mockUserInfo.account, mockUserInfo.password, mockUserInfo.passwordChk);
+    const { email, username, account, password, passwordChk } = req.body;
+    expect(AuthService.register).toHaveBeenCalledWith(email, username, account, password, passwordChk);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(mockResult);
   });
@@ -135,27 +120,22 @@ describe('AuthController.register', () => {
 
 
 describe('AuthController.login', () => {
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('should call AuthService.login and respond with correct status and body', async () => {
-    const req = {
-      body: {
-        account: 'user@example.com',
-        password: 'password123'
-      }
-    };
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn()
+    const req = { body: { account: 'user@example.com', password: 'password123' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    const mockResult = {
+      message: '登入成功',
+      user: { id: 1, email: 'user@example.com', username: 'username' },
+      token: 'jwt-token'
     };
 
-    AuthService.login.mockResolvedValue({
-      message: '登入成功',
-      user: {
-        id: 1,
-        email: "user@example.com",
-        username: "username"
-      },
-      token: "jwt-token"
-    });
+    AuthService.login.mockResolvedValue(mockResult);
 
     await AuthController.login(req, res);
 
@@ -164,23 +144,13 @@ describe('AuthController.login', () => {
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: '登入成功' }));
   });
 
-  it('should return error if user is not exist ', async () => {
-    const req = {
-      body: {
-        account: 'user@example.com',
-        password: 'password123'
-      }
-    };
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn()
-    };
+  it('should return 404 if user does not exist', async () => {
+    const req = { body: { account: 'user@example.com', password: 'password123' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
     const mockResult = {
       message: '登入失敗，帳號不存在',
-      error: {
-        code: "E008_ACCOUNT_NOT_EXIST"
-      }
+      error: { code: 'E008_ACCOUNT_NOT_EXIST' }
     };
 
     AuthService.login.mockResolvedValue(mockResult);
@@ -190,23 +160,13 @@ describe('AuthController.login', () => {
     expect(res.json).toHaveBeenCalledWith(mockResult);
   });
 
-  it('should return 401 if user not found or password incorrect', async () => {
-    const req = {
-      body: {
-        account: 'user@example.com',
-        password: 'password123'
-      }
-    };
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn()
-    };
+  it('should return 401 if password is incorrect', async () => {
+    const req = { body: { account: 'user@example.com', password: 'password123' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
     const mockResult = {
       message: '登入失敗，帳號密碼錯誤',
-      error: {
-        code: "E003_INVALID_CREDENTIALS"
-      }
+      error: { code: 'E003_INVALID_CREDENTIALS' }
     };
 
     AuthService.login.mockResolvedValue(mockResult);

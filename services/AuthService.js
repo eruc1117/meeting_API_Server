@@ -58,12 +58,12 @@ class AuthService {
 
   static async login(account, password) {
     try {
-      const user = await User.findByEmailOrUsername(account, account, account);
+      const user = await User.findByAccount(account);
       if (!user) {
         return {
           message: '登入失敗，帳號不存在',
           error: {
-            code: "E008_ACCOUNT_NOT_EXIST"
+            code: 'E008_ACCOUNT_NOT_EXIST'
           }
         };
       }
@@ -73,7 +73,7 @@ class AuthService {
         return {
           message: '登入失敗，帳號密碼錯誤',
           error: {
-            code: "E003_INVALID_CREDENTIALS"
+            code: 'E003_INVALID_CREDENTIALS'
           }
         };
       }
@@ -91,7 +91,11 @@ class AuthService {
       };
 
     } catch (error) {
-      console.log("login error --> ", error);
+      console.error('login error --> ', error);
+      return {
+        message: '伺服器錯誤',
+        error: { code: 'E000_INTERNAL_ERROR' }
+      };
     }
   }
 }
