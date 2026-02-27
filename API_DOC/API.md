@@ -83,7 +83,7 @@
 ### 1.2 用戶登入 (`POST /api/auth/login`)
 
 #### 描述 
-用戶登入，提供電子郵件和密碼，返回 JWT 用於認證。
+用戶登入，提供電子郵件或是帳號、密碼，返回 JWT 用於認證。
 
 - **請求** URL: /api/auth/login
 
@@ -143,6 +143,137 @@
 }
 
 ```
+
+
+
+### 1.3 用戶更新密碼 (`PUTT /api/auth/updatePassword`)
+
+#### 描述 
+用戶登入後，修改個人密碼。
+
+- **請求** URL: /api/auth/updatePassword
+
+- **方法** : PUT
+
+- **請求參數**  (JSON Body):
+
+```json
+{
+  "account": "user@example.com",
+  "oirPassword": "password123",
+  "newPassword": "password123"
+}
+```
+回應
+####  成功 (200 OK):
+
+```json
+
+{
+  "message": "更新成功",
+  "data" : {
+  },
+  "error": {
+  }
+}
+```
+
+
+
+####  失敗 (401 Unauthorized):
+
+```json
+{
+  "message": "更新失敗，帳號密碼錯誤",
+  "data" : {
+  },
+  "error": {
+    "code" : "E003_INVALID_CREDENTIALS"
+  }
+}
+
+```
+
+### 1.4 取得用戶資料 (`GET /api/user/info?id=`)
+
+#### 描述
+用戶查詢自己的個人資料。需要 JWT 驗證，且只能查詢與 Token 中 id 相同的使用者資料。
+
+- **請求** URL: /api/user/info?id=
+
+- **方法** : GET
+
+- **請求參數**
+- (Header):
+```
+Authorization: Bearer <JWT-TOKEN>
+```
+- (Query):
+  - `id`：要查詢的使用者 ID（必填，且必須與 JWT Token 中的 id 相同）
+
+回應
+####  成功 (200 OK):
+
+```json
+{
+  "message": "成功",
+  "data" : {
+    "id": 1,
+    "email": "user@example.com",
+    "username": "user",
+    "account": "account"
+  },
+  "error": {}
+}
+```
+
+####  失敗 1：未提供 Token（401 Unauthorized）
+
+```json
+{
+  "message": "帳號尚未登入",
+  "error": {
+    "code": "E004_UNAUTHORIZED"
+  }
+}
+```
+
+####  失敗 2：查詢其他使用者資料（403 Forbidden）
+
+```json
+{
+  "message": "查詢失敗，無權限查詢其他使用者資料",
+  "data": {},
+  "error": {
+    "code": "E005_FORBIDDEN"
+  }
+}
+```
+
+####  失敗 3：缺少 id 參數（400 Bad Request）
+
+```json
+{
+  "message": "查詢失敗，缺少必要資料",
+  "data": {},
+  "error": {
+    "code": "E012_MISSING_FIELDS"
+  }
+}
+```
+
+####  失敗 4：使用者不存在（404 Not Found）
+
+```json
+{
+  "message": "查詢失敗，使用者不存在",
+  "data": {},
+  "error": {
+    "code": "E007_NOT_FOUND"
+  }
+}
+```
+
 
 
 ## 2. 行事曆 API

@@ -9,17 +9,25 @@ class User {
     return result.rows[0];
   }
 
-  static async findByAccount(account) {
+  static async findById(id) {
     const result = await db.query(
-      'SELECT * FROM users WHERE email = $1 OR username = $1 OR account = $1',
-      [account]
+      'SELECT id, email, username, account FROM users WHERE id = $1',
+      [id]
+    );
+    return result.rows[0];
+  }
+
+  static async findByAccountOrEmail(identifier) {
+    const result = await db.query(
+      'SELECT * FROM users WHERE account = $1 OR email = $1',
+      [identifier]
     );
     return result.rows[0];
   }
 
   static async updatePassword(account, newPasswordHash) {
     await db.query(
-      'UPDATE users SET password_hash = $1 WHERE email = $2 OR username = $2 OR account = $2',
+      'UPDATE users SET password_hash = $1 WHERE account = $2',
       [newPasswordHash, account]
     );
   }

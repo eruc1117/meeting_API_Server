@@ -58,7 +58,7 @@ class AuthService {
 
   static async login(account, password) {
     try {
-      const user = await User.findByAccount(account);
+      const user = await User.findByAccountOrEmail(account);
       if (!user) {
         return {
           message: '登入失敗，帳號不存在',
@@ -102,11 +102,14 @@ class AuthService {
 
   static async updatePassword(account, oirPassword, newPassword) {
     try {
-      const user = await User.findByAccount(account);
+      console.log("test start ")
+
+      const user = await User.findByAccountOrEmail(account);
+
 
       if (!user) {
         return {
-          message: '更新失敗，帳號密碼錯誤',
+          message: '更新失敗，使用者不存在',
           data: {},
           error: { code: 'E003_INVALID_CREDENTIALS' }
         };
