@@ -14,8 +14,11 @@ describe('ScheduleService.createSchedule', () => {
     description: 'Discuss project',
     start_time: '2025-05-08T09:00:00',
     end_time: '2025-05-08T10:00:00',
+    is_public: true,
+    location: '會議室 A',
+    participants: '小明',
     created_at: '2025-05-08T09:00:00',
-    isOpen: true
+    updated_at: '2025-05-08T09:00:00'
   };
 
   beforeEach(() => {
@@ -27,11 +30,11 @@ describe('ScheduleService.createSchedule', () => {
     db.query.mockReturnValueOnce({ rows: [mockSchedule] });
 
     const result = await ScheduleService.createSchedule(
-      1, 'Meeting', 'Discuss project', '2025-05-08T09:00:00', '2025-05-08T10:00:00', true
+      1, 'Meeting', 'Discuss project', '2025-05-08T09:00:00', '2025-05-08T10:00:00', true, '會議室 A', '小明'
     );
 
     expect(result.message).toBe('活動建立成功');
-    expect(result.schedule).toEqual(mockSchedule);
+    expect(result.data).toEqual(mockSchedule);
   });
 
   it('資料未提供，回傳錯誤訊息', async () => {
@@ -44,7 +47,7 @@ describe('ScheduleService.createSchedule', () => {
     Schedule.findEvent.mockResolvedValue([mockSchedule]);
 
     const result = await ScheduleService.createSchedule(
-      1, 'Repeat Meeting', 'Discuss project', '2025-05-08T09:00:00', '2025-05-08T10:00:00', true
+      1, 'Repeat Meeting', 'Discuss project', '2025-05-08T09:00:00', '2025-05-08T10:00:00', true, null, null
     );
 
     expect(result.message).toBe('活動建立失敗，時段重複');
@@ -57,12 +60,13 @@ describe('ScheduleService.createSchedule', () => {
 describe('ScheduleService.getSchedulesByUserId', () => {
   it('should return schedules for user', async () => {
     const mockSchedules = [
-      { id: 1, user_id: 1, title: 'Meeting', start_time: '2025-05-08T09:00:00', isOpen: true }
+      { id: 1, user_id: 1, title: 'Meeting', start_time: '2025-05-08T09:00:00', is_public: true, location: '會議室 A', participants: '小明' }
     ];
     db.query.mockResolvedValue({ rows: mockSchedules });
 
     const result = await ScheduleService.getSchedulesByUserId(1);
-    expect(result).toEqual(mockSchedules);
+    expect(result.message).toBe('活動查詢成功');
+    expect(result.data.schedule).toEqual(mockSchedules);
   });
 
   it('should throw error if DB fails', async () => {
@@ -81,40 +85,43 @@ describe('ScheduleService.updateSchedule', () => {
     description: 'Updated Description',
     start_time: '2025-05-08 10:00:00',
     end_time: '2025-05-08 11:00:00',
-    created_at: '2025-05-08 09:00:00',
-    isOpen: true
+    is_public: false,
+    location: '會議室 B',
+    participants: '小美',
+    created_at: '2025-05-08 09:00:00'
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('should return 200 and updated schedule if update is successful', async () => {
+  it('should return success message if update is successful', async () => {
     Schedule.findByIdAndUserId.mockResolvedValueOnce([mockSchedule]);
-    db.query.mockResolvedValueOnce({ rows: [mockSchedule] });
+    db.query.mockResolvedValueOnce({});
 
     const result = await ScheduleService.updateSchedule(
-      1, 1, 'Updated Title', 'Updated Description', '2025-05-08 10:00:00', '2025-05-08 11:00:00', false
+      1, 1, 'Updated Title', 'Updated Description', '2025-05-08 10:00:00', '2025-05-08 11:00:00', false, '會議室 B', '小美'
     );
     expect(result.message).toBe('活動更新成功');
-    expect(result.schedule).toEqual(mockSchedule);
+    expect(result.data).toEqual({});
   });
 
   it('should return 404 if schedule not found or does not belong to user', async () => {
     Schedule.findByIdAndUserId.mockResolvedValueOnce([]);
 
     const result = await ScheduleService.updateSchedule(
-      1, 99, 'New Title', 'desc', '2025-05-08 10:00:00', '2025-05-08 11:00:00', true
+      1, 99, 'New Title', 'desc', '2025-05-08 10:00:00', '2025-05-08 11:00:00', true, null, null
     );
 
-    expect(result.message).toBe('找不到該行事曆或權限不足');
+    expect(result.message).toBe('活動更新失敗');
+    expect(result.error.code).toBe('E007_NOT_FOUND');
   });
 
   it('should throw error if database fails', async () => {
     Schedule.findByIdAndUserId.mockRejectedValue(new Error('DB error'));
 
     await expect(ScheduleService.updateSchedule(
-      1, 1, 'Title', 'Desc', '2025-05-08 10:00:00', '2025-05-08 11:00:00', true
+      1, 1, 'Title', 'Desc', '2025-05-08 10:00:00', '2025-05-08 11:00:00', true, null, null
     )).rejects.toThrow('DB error');
   });
 });
@@ -125,20 +132,21 @@ describe('ScheduleService.deleteSchedule', () => {
     jest.clearAllMocks();
   });
 
-  it('should return 200 if schedule is deleted successfully', async () => {
+  it('should return success if schedule is deleted successfully', async () => {
     Schedule.findByIdAndUserId.mockResolvedValueOnce([{ id: 1, user_id: 1 }]);
     db.query.mockResolvedValueOnce({});
 
     const result = await ScheduleService.deleteSchedule(1, 1);
 
     expect(result.message).toBe('活動刪除成功');
+    expect(result.data).toEqual({});
   });
 
   it('should return 404 if schedule does not belong to user', async () => {
     Schedule.findByIdAndUserId.mockResolvedValueOnce([]);
 
     const result = await ScheduleService.deleteSchedule(2, 999);
-    expect(result.message).toBe('找不到該行事曆或權限不足');
+    expect(result.message).toBe('活動刪除失敗');
     expect(result.error.code).toBe('E007_NOT_FOUND');
   });
 
@@ -161,7 +169,7 @@ describe('ScheduleService.attendSchedule', () => {
 
     const result = await ScheduleService.attendSchedule(1, 1);
     expect(result.message).toBe('活動參加成功');
-    expect(result.code).toBe(200);
+    expect(result.data).toEqual({});
   });
 
   it('活動不存在或已關閉，回傳失敗訊息', async () => {
@@ -170,7 +178,7 @@ describe('ScheduleService.attendSchedule', () => {
     const result = await ScheduleService.attendSchedule(1, 999);
     expect(result.message).toBe('活動參加失敗，活動不存在或已關閉');
     expect(result.error.code).toBe('E007_NOT_FOUND');
-    expect(result.code).toBe(400);
+    expect(result.data).toEqual({});
   });
 });
 
@@ -186,7 +194,7 @@ describe('ScheduleService.unattendSchedule', () => {
 
     const result = await ScheduleService.unattendSchedule(1, 1);
     expect(result.message).toBe('活動退出成功');
-    expect(result.code).toBe(200);
+    expect(result.data).toEqual({});
   });
 
   it('使用者未參加該活動，回傳失敗訊息', async () => {
@@ -195,6 +203,6 @@ describe('ScheduleService.unattendSchedule', () => {
     const result = await ScheduleService.unattendSchedule(1, 999);
     expect(result.message).toBe('活動退出失敗，使用者未參加該活動');
     expect(result.error.code).toBe('E007_NOT_FOUND');
-    expect(result.code).toBe(400);
+    expect(result.data).toEqual({});
   });
 });
