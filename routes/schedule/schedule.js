@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const ScheduleController = require("../../controllers/ScheduleController");
-const authenticateToken = require("../../middlewares/authMiddleware")
 
-
-router.post('/', authenticateToken, ScheduleController.create);
-router.get('/', authenticateToken, ScheduleController.getUserSchedules);
-router.put('/:id', authenticateToken, ScheduleController.update);
-router.delete('/:id', authenticateToken, ScheduleController.delete);
+router.post('/', ScheduleController.create);
+router.post('/query', ScheduleController.getUserSchedules);
+router.put('/:id', ScheduleController.update);
+router.delete('/:id', ScheduleController.delete);
+router.post('/attend/:id', ScheduleController.attend);
+router.delete('/attend/:id', ScheduleController.unattend);
 
 module.exports = router;

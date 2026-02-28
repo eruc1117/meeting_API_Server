@@ -16,8 +16,8 @@ class ScheduleController {
 
   static async getUserSchedules(req, res) {
     try {
-      const user_id = req.user.id;
-      const result = await ScheduleService.getSchedulesByUserId(user_id);
+      const { user_id, start_time, end_time } = req.body;
+      const result = await ScheduleService.getSchedulesByUserId(user_id, start_time, end_time);
       sendResponse(res, result, 200);
     } catch (error) {
       console.error('Get schedules error:', error);

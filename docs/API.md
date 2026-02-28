@@ -385,16 +385,29 @@ Authorization: Bearer <JWT-TOKEN>
 ```
 
 
-### 2.2 查詢行事曆事件（GET /api/schedules）
+### 2.2 查詢行事曆事件（POST /api/schedules/query）
 #### 描述
-1. 用戶查詢自己的行事曆事件。
+1. 查詢指定使用者的行事曆事件。
 2. 此需求需先進行身分驗證。
 
-- **請求** URL: /api/schedules
-- **方法**: GET
-- **請求參數**: 
-    - user_id: 用戶的 ID
-    - 
+- **請求** URL: /api/schedules/query
+- **方法**: POST
+- **請求參數**:
+- (Header):
+```
+Authorization: Bearer <JWT-TOKEN>
+```
+- (JSON Body):
+```json
+{
+  "user_id": 1,
+  "start_time": "2026-02-01T00:00:00",
+  "end_time": "2026-02-28T23:59:59"
+}
+```
+
+> `start_time`、`end_time` 為選填；未提供時回傳該使用者所有活動。
+
 回應
 成功 (200 OK):
 

@@ -96,7 +96,7 @@ Express Router
 | 方法 | 路徑 | 說明 | 需要 JWT |
 |------|------|------|----------|
 | POST | `/api/schedules` | 建立活動 | 是 |
-| GET | `/api/schedules` | 查詢自己的活動列表 | 是 |
+| POST | `/api/schedules/query` | 查詢活動列表（user_id 必填，時間範圍選填） | 是 |
 | PUT | `/api/schedules/:id` | 更新活動 | 是 |
 | DELETE | `/api/schedules/:id` | 刪除活動 | 是 |
 | POST | `/api/schedules/attend/:id` | 參加公開活動 | 是 |
@@ -162,6 +162,7 @@ Express Router
 - `location`、`participants` 為選填；未提供時存入 `NULL`，前端應判斷空值後決定是否顯示
 - `is_public = true` 的活動可被其他使用者參加（寫入 `participants` 表）；`is_public = false` 時參加請求回傳 `E007_NOT_FOUND`
 - 使用者只能更新/刪除自己建立的活動
+- 查詢活動（`POST /api/schedules/query`）以 JSON Body 傳入 `user_id`（必填）、`start_time`、`end_time`（選填，ISO 格式）；有傳入時間時篩選 `start_time >= 起始` 及 `end_time <= 結束`，未傳入則回傳該使用者所有活動
 
 ### 帳號
 

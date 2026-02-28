@@ -55,12 +55,23 @@ class ScheduleService {
     }
   }
 
-  static async getSchedulesByUserId(user_id) {
+  static async getSchedulesByUserId(user_id, start_time, end_time) {
     try {
-      const result = await db.query(
-        'SELECT * FROM schedules WHERE user_id = $1 ORDER BY start_time ASC',
-        [user_id]
-      );
+      let queryText = 'SELECT * FROM schedules WHERE user_id = $1';
+      const params = [user_id];
+
+      if (start_time) {
+        params.push(start_time);
+        queryText += ` AND start_time >= $${params.length}`;
+      }
+      if (end_time) {
+        params.push(end_time);
+        queryText += ` AND end_time <= $${params.length}`;
+      }
+
+      queryText += ' ORDER BY start_time ASC';
+
+      const result = await db.query(queryText, params);
       return {
         message: '活動查詢成功',
         data: { schedule: result.rows }
