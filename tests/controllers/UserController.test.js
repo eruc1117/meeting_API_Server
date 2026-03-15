@@ -3,6 +3,59 @@ const UserService = require('../../services/UserService');
 
 jest.mock('../../services/UserService');
 
+describe('UserController.searchUsers', () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should return 200 with users on success', async () => {
+    const req = { query: { q: '小明' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    const mockResult = {
+      message: '查詢成功',
+      data: { users: [{ id: 1, username: '小明', email: 'ming@example.com' }] }
+    };
+
+    UserService.searchUsers.mockResolvedValue(mockResult);
+
+    await UserController.searchUsers(req, res);
+
+    expect(UserService.searchUsers).toHaveBeenCalledWith('小明');
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(mockResult);
+  });
+
+  it('should return 400 if q is missing', async () => {
+    const req = { query: {} };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    const mockResult = {
+      message: '查詢失敗，缺少必要資料',
+      data: {},
+      error: { code: 'E012_MISSING_FIELDS' }
+    };
+
+    UserService.searchUsers.mockResolvedValue(mockResult);
+
+    await UserController.searchUsers(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(mockResult);
+  });
+
+  it('should return 500 if service throws', async () => {
+    const req = { query: { q: 'test' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    UserService.searchUsers.mockRejectedValue(new Error('unexpected'));
+
+    await UserController.searchUsers(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+  });
+});
+
 describe('UserController.getUserInfo', () => {
   afterEach(() => {
     jest.clearAllMocks();

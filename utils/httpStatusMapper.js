@@ -13,6 +13,7 @@ function mapErrorCodeToStatusCode(errorCode) {
         E010_SCHEDULE_SERVER: 500,
         E011_DATA_TYPE_ERROR: 400,
         E012_MISSING_FIELDS: 400,
+        E013_WEAK_PASSWORD: 400,
     };
 
     return map[errorCode] || 500; // fallback to 500 if not found

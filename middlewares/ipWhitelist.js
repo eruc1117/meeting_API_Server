@@ -5,15 +5,13 @@ const allowedIPs = [process.env.SOURCEIP, process.env.POSTMAN, process.env.AUTOT
 module.exports = function ipWhitelist(req, res, next) {
   const ip = req.ip || req.connection.remoteAddress;
 
-  console.log("ip ---> ", ip);
-
   if (allowedIPs.includes(ip)) {
     return next();
   }
 
+  // M-04 修正：不在錯誤回應中洩漏使用者 IP
   return res.status(403).json({
     message: '禁止存取：來源 IP 不允許',
-    data: {sourceIP: ip},
     error: { code: 'E008_FORBIDDEN_IP' }
   });
 };

@@ -12,6 +12,22 @@ class ScheduleService {
       };
     }
 
+    // M-01 修正：欄位長度驗證
+    if (typeof title !== 'string' || title.trim().length === 0 || title.length > 255) {
+      return {
+        message: '活動建立失敗，標題長度需在 1~255 字元之間',
+        data: {},
+        error: { code: 'E011_DATA_TYPE_ERROR' }
+      };
+    }
+    if (description && (typeof description !== 'string' || description.length > 5000)) {
+      return {
+        message: '活動建立失敗，描述長度不可超過 5000 字元',
+        data: {},
+        error: { code: 'E011_DATA_TYPE_ERROR' }
+      };
+    }
+
     const validateDateTimeSRe = validator.validateDateTime(start_time);
     const validateDateTimeERe = validator.validateDateTime(end_time);
 
@@ -46,7 +62,7 @@ class ScheduleService {
         data: result.rows[0]
       };
     } catch (err) {
-      console.error('Schedule creation error:', err);
+      console.error('Schedule creation error');
       return {
         message: '功能異常',
         data: {},
@@ -77,7 +93,13 @@ class ScheduleService {
         data: { schedule: result.rows }
       };
     } catch (error) {
-      throw new Error('Database error');
+      // L-02 修正：統一回傳錯誤物件，不 throw
+      console.error('getSchedulesByUserId error');
+      return {
+        message: '功能異常',
+        data: {},
+        error: { code: 'E010_SCHEDULE_SERVER' }
+      };
     }
   }
 
@@ -106,7 +128,7 @@ class ScheduleService {
         data: {}
       };
     } catch (err) {
-      console.error('UpdateSchedule service error:', err);
+      console.error('UpdateSchedule service error');
       throw err;
     }
   }
@@ -130,7 +152,7 @@ class ScheduleService {
         data: {}
       };
     } catch (err) {
-      console.error('DeleteSchedule service error:', err);
+      console.error('DeleteSchedule service error');
       throw err;
     }
   }
@@ -160,7 +182,7 @@ class ScheduleService {
         data: {}
       };
     } catch (err) {
-      console.error('attendSchedule error:', err);
+      console.error('attendSchedule error');
       throw err;
     }
   }
@@ -190,7 +212,7 @@ class ScheduleService {
         data: {}
       };
     } catch (err) {
-      console.error('unattendSchedule error:', err);
+      console.error('unattendSchedule error');
       throw err;
     }
   }

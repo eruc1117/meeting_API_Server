@@ -3,6 +3,53 @@ const User = require('../../models/User');
 
 jest.mock('../../models/User');
 
+describe('UserService.searchUsers', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should return E012 if q is missing', async () => {
+    const result = await UserService.searchUsers(undefined);
+    expect(result.message).toBe('查詢失敗，缺少必要資料');
+    expect(result.error.code).toBe('E012_MISSING_FIELDS');
+  });
+
+  it('should return E012 if q is empty string', async () => {
+    const result = await UserService.searchUsers('   ');
+    expect(result.message).toBe('查詢失敗，缺少必要資料');
+    expect(result.error.code).toBe('E012_MISSING_FIELDS');
+  });
+
+  it('should return matching users on success', async () => {
+    const mockUsers = [
+      { id: 1, username: '小明', email: 'ming@example.com' },
+      { id: 5, username: '小明2', email: 'ming2@example.com' }
+    ];
+    User.searchByKeyword.mockResolvedValue(mockUsers);
+
+    const result = await UserService.searchUsers('小明');
+    expect(result.message).toBe('查詢成功');
+    expect(result.data.users).toEqual(mockUsers);
+    expect(User.searchByKeyword).toHaveBeenCalledWith('小明');
+  });
+
+  it('should return empty array if no users match', async () => {
+    User.searchByKeyword.mockResolvedValue([]);
+
+    const result = await UserService.searchUsers('notexist');
+    expect(result.message).toBe('查詢成功');
+    expect(result.data.users).toEqual([]);
+  });
+
+  it('should return E000 if DB throws', async () => {
+    User.searchByKeyword.mockRejectedValue(new Error('DB error'));
+
+    const result = await UserService.searchUsers('test');
+    expect(result.message).toBe('伺服器錯誤');
+    expect(result.error.code).toBe('E000_INTERNAL_ERROR');
+  });
+});
+
 describe('UserService.getUserInfo', () => {
   beforeEach(() => {
     jest.clearAllMocks();

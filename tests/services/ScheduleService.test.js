@@ -69,10 +69,12 @@ describe('ScheduleService.getSchedulesByUserId', () => {
     expect(result.data.schedule).toEqual(mockSchedules);
   });
 
-  it('should throw error if DB fails', async () => {
+  it('should return E010 if DB fails', async () => {
     db.query.mockRejectedValue(new Error('DB error'));
 
-    await expect(ScheduleService.getSchedulesByUserId(1)).rejects.toThrow('Database error');
+    const result = await ScheduleService.getSchedulesByUserId(1);
+    expect(result.message).toBe('功能異常');
+    expect(result.error.code).toBe('E010_SCHEDULE_SERVER');
   });
 });
 

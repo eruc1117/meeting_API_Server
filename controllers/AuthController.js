@@ -8,18 +8,20 @@ class AuthController {
       const result = await AuthService.register(email, username, account, password, passwordChk);
       sendResponse(res, result, 200);
     } catch (error) {
-      console.error('register ---> ', error);
+      console.error('register error');
       res.status(500).json({ message: 'Internal server error' });
     }
   }
 
   static async updatePassword(req, res) {
     try {
-      const { account, oirPassword, newPassword } = req.body;
-      const result = await AuthService.updatePassword(account, oirPassword, newPassword);
+      // H-01 修正：user_id 從 JWT 取得（路由已加 authMiddleware）
+      const user_id = req.user.id;
+      const { oirPassword, newPassword } = req.body;
+      const result = await AuthService.updatePassword(user_id, oirPassword, newPassword);
       sendResponse(res, result, 200);
     } catch (error) {
-      console.error('updatePassword ---> ', error);
+      console.error('updatePassword error');
       res.status(500).json({ message: 'Internal server error' });
     }
   }
@@ -30,7 +32,7 @@ class AuthController {
       const result = await AuthService.login(account, password);
       sendResponse(res, result, 200);
     } catch (error) {
-      console.error('login ---> ', error);
+      console.error('login error');
       res.status(500).json({ message: 'Internal server error' });
     }
   }

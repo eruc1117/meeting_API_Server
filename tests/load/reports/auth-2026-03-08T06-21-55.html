@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>登入 API — 壓力測試</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f2f5; color: #222; }
+    .container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+    h1 { font-size: 1.6rem; color: #1a1a2e; margin-bottom: 4px; }
+    .subtitle { color: #666; font-size: 0.9rem; margin-bottom: 28px; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .card { background: #fff; border-radius: 10px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+    .card .card-label { font-size: 0.8rem; color: #888; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .05em; }
+    .card .card-value { font-size: 1.8rem; font-weight: 700; color: #1a1a2e; }
+    .card .card-unit { font-size: 0.85rem; color: #aaa; margin-left: 4px; }
+
+    .section { background: #fff; border-radius: 10px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,.07); margin-bottom: 20px; }
+    .section h2 { font-size: 1.05rem; color: #444; margin-bottom: 16px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; }
+    td { padding: 9px 12px; font-size: 0.9rem; border-bottom: 1px solid #f3f3f3; }
+    td.label { color: #666; width: 55%; }
+    td.value { font-weight: 600; color: #1a1a2e; }
+    .unit { font-weight: 400; color: #aaa; }
+
+    .threshold-row { display: flex; gap: 16px; flex-wrap: wrap; }
+    .threshold-item { flex: 1; min-width: 200px; background: #f8f9fa; border-radius: 8px; padding: 16px; display: flex; align-items: center; gap: 12px; }
+    .threshold-item .th-label { font-size: 0.85rem; color: #555; }
+    .threshold-item .th-value { font-size: 0.8rem; color: #888; margin-top: 2px; }
+
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; letter-spacing: .04em; }
+    .badge.pass { background: #e8f5e9; color: #2e7d32; }
+    .badge.fail { background: #ffebee; color: #c62828; }
+
+    footer { text-align: center; color: #bbb; font-size: 0.8rem; margin-top: 32px; padding-bottom: 40px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>登入 API — 壓力測試</h1>
+    <p class="subtitle">產生時間：2026/3/8 下午2:21:55 ｜ 測試區間：2026/3/8 下午2:21:35 ~ 2026/3/8 下午2:21:55</p>
+
+    <!-- 概覽卡片 -->
+    <div class="grid">
+      <div class="card">
+        <div class="card-label">總請求數</div>
+        <div class="card-value">34,162<span class="card-unit">req</span></div>
+      </div>
+      <div class="card">
+        <div class="card-label">平均 RPS</div>
+        <div class="card-value">1,708<span class="card-unit">req/s</span></div>
+      </div>
+      <div class="card">
+        <div class="card-label">並發連線</div>
+        <div class="card-value">50<span class="card-unit">conn</span></div>
+      </div>
+      <div class="card">
+        <div class="card-label">測試時長</div>
+        <div class="card-value">20.07<span class="card-unit">sec</span></div>
+      </div>
+    </div>
+
+    <!-- 延遲分佈 -->
+    <div class="section">
+      <h2>延遲分佈（Latency）</h2>
+      <table>
+        <tr><td class="label">最小值（min）</td><td class="value">42<span class="unit"> ms</span></td></tr>
+        <tr><td class="label">平均值（mean）</td><td class="value">4889.9<span class="unit"> ms</span></td></tr>
+        <tr><td class="label">p50（中位數）</td><td class="value">4859<span class="unit"> ms</span></td></tr>
+        <tr><td class="label">p75</td><td class="value">7325<span class="unit"> ms</span></td></tr>
+        <tr><td class="label">p90</td><td class="value">8797<span class="unit"> ms</span></td></tr>
+        <tr><td class="label">p99</td><td class="value">9692<span class="unit"> ms</span></td></tr>
+        <tr><td class="label">最大值（max）</td><td class="value">9794<span class="unit"> ms</span></td></tr>
+        <tr><td class="label">標準差（stddev）</td><td class="value">2800.9<span class="unit"> ms</span></td></tr>
+      </table>
+    </div>
+
+    <!-- 請求統計 -->
+    <div class="section">
+      <h2>請求統計</h2>
+      <table>
+        <tr><td class="label">總請求數</td><td class="value">34,162<span class="unit"> req</span></td></tr>
+        <tr><td class="label">平均 RPS</td><td class="value">1,708<span class="unit"> req/s</span></td></tr>
+        <tr><td class="label">吞吐量（平均）</td><td class="value">2086.7<span class="unit"> KB/s</span></td></tr>
+        <tr><td class="label">錯誤數（non-2xx + timeout）</td><td class="value">35626<span class="unit"> </span></td></tr>
+        <tr><td class="label">錯誤率</td><td class="value">4.29<span class="unit"> %</span></td></tr>
+        <tr><td class="label">Non-2xx 回應</td><td class="value">34162<span class="unit"> </span></td></tr>
+        <tr><td class="label">Timeouts</td><td class="value">0<span class="unit"> </span></td></tr>
+      </table>
+    </div>
+
+    <!-- 閾值判斷 -->
+    <div class="section">
+      <h2>閾值判斷</h2>
+      <div class="threshold-row">
+        <div class="threshold-item">
+          <span class="badge fail">FAIL</span>
+          <div>
+            <div class="th-label">p99 延遲 &lt; 1000ms</div>
+            <div class="th-value">實際值：9692ms</div>
+          </div>
+        </div>
+        <div class="threshold-item">
+          <span class="badge pass">PASS</span>
+          <div>
+            <div class="th-label">錯誤率 &lt; 5%</div>
+            <div class="th-value">實際值：4.29%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>Generated by autocannon + custom reporter ｜ 2026</footer>
+  </div>
+</body>
+</html>

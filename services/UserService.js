@@ -1,6 +1,31 @@
 const User = require('../models/User');
 
 class UserService {
+  static async searchUsers(q) {
+    if (!q || q.trim().length === 0) {
+      return {
+        message: '查詢失敗，缺少必要資料',
+        data: {},
+        error: { code: 'E012_MISSING_FIELDS' }
+      };
+    }
+
+    try {
+      const users = await User.searchByKeyword(q.trim());
+      return {
+        message: '查詢成功',
+        data: { users }
+      };
+    } catch (error) {
+      console.error('searchUsers error');
+      return {
+        message: '伺服器錯誤',
+        data: {},
+        error: { code: 'E000_INTERNAL_ERROR' }
+      };
+    }
+  }
+
   static async getUserInfo(id) {
     try {
       if (!id) {

@@ -2,6 +2,17 @@ const UserService = require('../services/UserService');
 const { sendResponse } = require('../utils/responseHelper');
 
 class UserController {
+  static async searchUsers(req, res) {
+    try {
+      const { q } = req.query;
+      const result = await UserService.searchUsers(q);
+      sendResponse(res, result, 200);
+    } catch (error) {
+      console.error('searchUsers error');
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
   static async getUserInfo(req, res) {
     try {
       const { id } = req.query;

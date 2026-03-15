@@ -11,7 +11,7 @@ class User {
 
   static async findById(id) {
     const result = await db.query(
-      'SELECT id, email, username, account FROM users WHERE id = $1',
+      'SELECT id, email, username, account, password_hash FROM users WHERE id = $1',
       [id]
     );
     return result.rows[0];
@@ -32,12 +32,27 @@ class User {
     );
   }
 
+  static async updatePasswordById(id, newPasswordHash) {
+    await db.query(
+      'UPDATE users SET password_hash = $1 WHERE id = $2',
+      [newPasswordHash, id]
+    );
+  }
+
   static async create(email, username, account, passwordHash) {
     const result = await db.query(
       'INSERT INTO users (email, username, account, password_hash) VALUES ($1, $2, $3, $4) RETURNING id',
       [email, username, account, passwordHash]
     );
     return result.rows[0].id;
+  }
+
+  static async searchByKeyword(keyword, limit = 20) {
+    const result = await db.query(
+      'SELECT id, username, email FROM users WHERE username ILIKE $1 OR email ILIKE $1 LIMIT $2',
+      [`%${keyword}%`, limit]
+    );
+    return result.rows;
   }
 }
 

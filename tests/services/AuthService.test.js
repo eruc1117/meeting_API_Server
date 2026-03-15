@@ -17,8 +17,8 @@ describe('AuthService.register', () => {
     email: 'user@example.com',
     username: 'username',
     account: 'account',
-    password: 'hashedpw',
-    passwordChk: 'hashedpw'
+    password: 'Password1',
+    passwordChk: 'Password1'
   };
 
   it('should return error if email format is invalid', async () => {
@@ -37,7 +37,7 @@ describe('AuthService.register', () => {
   });
 
   it('should return an error if the password does not match during checkPassword', async () => {
-    const result = await AuthService.register(mockUser.email, mockUser.username, mockUser.account, mockUser.password, 'ElsePassword');
+    const result = await AuthService.register(mockUser.email, mockUser.username, mockUser.account, mockUser.password, 'ElsePassword1');
 
     expect(result.message).toBe('密碼和確認密碼不同');
     expect(result.error.code).toBe('E009_PASSWORD_NOT_SAME');
@@ -65,38 +65,48 @@ describe('AuthService.updatePassword', () => {
     jest.clearAllMocks();
   });
 
-  it('should return success when account and old password are correct', async () => {
+  it('should return success when user_id and old password are correct', async () => {
     const mockUser = { id: 1, password_hash: 'hashedpw' };
-    User.findByAccount.mockResolvedValue(mockUser);
+    User.findById.mockResolvedValue(mockUser);
     bcrypt.compare.mockResolvedValue(true);
     bcrypt.hash.mockResolvedValue('newHashedpw');
-    User.updatePassword = jest.fn().mockResolvedValue();
+    User.updatePasswordById = jest.fn().mockResolvedValue();
 
-    const result = await AuthService.updatePassword('user@example.com', 'oldPass', 'newPass');
+    const result = await AuthService.updatePassword(1, 'OldPass1', 'NewPass1');
 
     expect(result.message).toBe('更新成功');
     expect(result.data).toEqual({});
-    expect(bcrypt.compare).toHaveBeenCalledWith('oldPass', 'hashedpw');
-    expect(bcrypt.hash).toHaveBeenCalledWith('newPass', 10);
+    expect(bcrypt.compare).toHaveBeenCalledWith('OldPass1', 'hashedpw');
+    expect(bcrypt.hash).toHaveBeenCalledWith('NewPass1', 10);
   });
 
-  it('should return E003 if account does not exist', async () => {
-    User.findByAccount.mockResolvedValue(null);
+  it('should return E003 if user does not exist', async () => {
+    User.findById.mockResolvedValue(null);
 
-    const result = await AuthService.updatePassword('wrong@example.com', 'oldPass', 'newPass');
+    const result = await AuthService.updatePassword(999, 'OldPass1', 'NewPass1');
 
-    expect(result.message).toBe('更新失敗，帳號密碼錯誤');
+    expect(result.message).toBe('更新失敗，使用者不存在');
     expect(result.error.code).toBe('E003_INVALID_CREDENTIALS');
   });
 
   it('should return E003 if old password is incorrect', async () => {
-    User.findByAccount.mockResolvedValue({ id: 1, password_hash: 'hashedpw' });
+    User.findById.mockResolvedValue({ id: 1, password_hash: 'hashedpw' });
     bcrypt.compare.mockResolvedValue(false);
 
-    const result = await AuthService.updatePassword('user@example.com', 'wrongPass', 'newPass');
+    const result = await AuthService.updatePassword(1, 'WrongPass1', 'NewPass1');
 
     expect(result.message).toBe('更新失敗，帳號密碼錯誤');
     expect(result.error.code).toBe('E003_INVALID_CREDENTIALS');
+  });
+
+  it('should return E013 if new password is too weak', async () => {
+    User.findById.mockResolvedValue({ id: 1, password_hash: 'hashedpw' });
+    bcrypt.compare.mockResolvedValue(true);
+
+    const result = await AuthService.updatePassword(1, 'OldPass1', 'weak');
+
+    expect(result.message).toBe('新密碼強度不足，需至少 8 字元並包含大小寫英文及數字');
+    expect(result.error.code).toBe('E013_WEAK_PASSWORD');
   });
 });
 
@@ -113,7 +123,7 @@ describe('AuthService.login', () => {
       username: 'username',
       password_hash: 'hashedpw'
     };
-    User.findByAccount.mockResolvedValue(mockUser);
+    User.findByAccountOrEmail.mockResolvedValue(mockUser);
     bcrypt.compare.mockResolvedValue(true);
     jwt.sign.mockReturnValue('mock-token');
 
@@ -124,12 +134,12 @@ describe('AuthService.login', () => {
     expect(result.data.user.id).toBe(mockUser.id);
     expect(result.data.user.email).toBe(mockUser.email);
     expect(result.data.user.username).toBe(mockUser.username);
-    expect(User.findByAccount).toHaveBeenCalledWith('user@example.com');
+    expect(User.findByAccountOrEmail).toHaveBeenCalledWith('user@example.com');
     expect(bcrypt.compare).toHaveBeenCalledWith('password123', 'hashedpw');
   });
 
   it('should return error if user does not exist', async () => {
-    User.findByAccount.mockResolvedValue(null);
+    User.findByAccountOrEmail.mockResolvedValue(null);
     const result = await AuthService.login('wrong@example.com', '123');
     expect(result.message).toBe('登入失敗，帳號不存在');
     expect(result.data).toEqual({});
@@ -137,7 +147,7 @@ describe('AuthService.login', () => {
   });
 
   it('should return 401 if password is incorrect', async () => {
-    User.findByAccount.mockResolvedValue({ id: 1, password_hash: 'hash' });
+    User.findByAccountOrEmail.mockResolvedValue({ id: 1, password_hash: 'hash' });
     bcrypt.compare.mockResolvedValue(false);
     const result = await AuthService.login('user@example.com', '123');
     expect(result.message).toBe('登入失敗，帳號密碼錯誤');

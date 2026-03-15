@@ -158,7 +158,7 @@ describe('PUT /api/auth/updatePassword', () => {
 
     expect(res.statusCode).toBe(401);
     expect(res.body).toEqual({
-      message: '更新失敗，帳號密碼錯誤',
+      message: '更新失敗，使用者不存在',
       data: {},
       error: { code: 'E003_INVALID_CREDENTIALS' }
     });

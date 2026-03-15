@@ -15,6 +15,15 @@ class AuthService {
         };
       }
 
+      // H-02 修正：密碼強度驗證
+      if (!validator.validatePassword(password)) {
+        return {
+          message: '密碼強度不足，需至少 8 字元並包含大小寫英文及數字',
+          data: {},
+          error: { code: 'E013_WEAK_PASSWORD' }
+        };
+      }
+
       if (password !== passwordChk) {
         return {
           message: '密碼和確認密碼不同',
@@ -46,7 +55,7 @@ class AuthService {
         },
       };
     } catch (error) {
-      console.error('register error --->', error);
+      console.error('register error');
       return {
         message: '伺服器錯誤',
         data: {},
@@ -91,7 +100,7 @@ class AuthService {
       };
 
     } catch (error) {
-      console.error('login error --> ', error);
+      console.error('login error');
       return {
         message: '伺服器錯誤',
         data: {},
@@ -100,12 +109,10 @@ class AuthService {
     }
   }
 
-  static async updatePassword(account, oirPassword, newPassword) {
+  // H-01 修正：改為接受 user_id（從 JWT），不依賴請求中的 account
+  static async updatePassword(user_id, oirPassword, newPassword) {
     try {
-      console.log("test start ")
-
-      const user = await User.findByAccountOrEmail(account);
-
+      const user = await User.findById(user_id);
 
       if (!user) {
         return {
@@ -124,15 +131,24 @@ class AuthService {
         };
       }
 
+      // H-02 修正：新密碼也需通過強度驗證
+      if (!validator.validatePassword(newPassword)) {
+        return {
+          message: '新密碼強度不足，需至少 8 字元並包含大小寫英文及數字',
+          data: {},
+          error: { code: 'E013_WEAK_PASSWORD' }
+        };
+      }
+
       const newPasswordHash = await bcrypt.hash(newPassword, 10);
-      await User.updatePassword(account, newPasswordHash);
+      await User.updatePasswordById(user_id, newPasswordHash);
 
       return {
         message: '更新成功',
         data: {}
       };
     } catch (error) {
-      console.error('updatePassword error --->', error);
+      console.error('updatePassword error');
       return {
         message: '伺服器錯誤',
         data: {},

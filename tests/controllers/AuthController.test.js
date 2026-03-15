@@ -121,10 +121,10 @@ describe('AuthController.register', () => {
 
 describe('AuthController.updatePassword', () => {
   const mockReq = {
+    user: { id: 1 },
     body: {
-      account: 'user@example.com',
-      oirPassword: 'oldPass123',
-      newPassword: 'newPass456'
+      oirPassword: 'OldPass1',
+      newPassword: 'NewPass1'
     }
   };
 
@@ -141,13 +141,13 @@ describe('AuthController.updatePassword', () => {
     await AuthController.updatePassword(mockReq, res);
 
     expect(AuthService.updatePassword).toHaveBeenCalledWith(
-      mockReq.body.account, mockReq.body.oirPassword, mockReq.body.newPassword
+      mockReq.user.id, mockReq.body.oirPassword, mockReq.body.newPassword
     );
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(mockResult);
   });
 
-  it('should return 401 if account or old password is incorrect', async () => {
+  it('should return 401 if old password is incorrect', async () => {
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     const mockResult = {
       message: '更新失敗，帳號密碼錯誤',
