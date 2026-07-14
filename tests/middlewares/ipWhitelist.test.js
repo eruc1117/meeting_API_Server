@@ -25,7 +25,6 @@ describe('ipWhitelist middleware', () => {
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith({
       message: '禁止存取：來源 IP 不允許',
-      data: {sourceIP: '123.123.123.123'},
       error: { code: 'E008_FORBIDDEN_IP' }
     });
     expect(next).not.toHaveBeenCalled();

@@ -10,16 +10,16 @@ describe('GET /api/user/info', () => {
     email: 'userinfo_a@example.com',
     username: 'userinfoA',
     account: 'userinfoA',
-    password: 'password123',
-    passwordChk: 'password123'
+    password: 'Password123',
+    passwordChk: 'Password123'
   };
 
   const userB = {
     email: 'userinfo_b@example.com',
     username: 'userinfoB',
     account: 'userinfoB',
-    password: 'password123',
-    passwordChk: 'password123'
+    password: 'Password123',
+    passwordChk: 'Password123'
   };
 
   beforeAll(async () => {

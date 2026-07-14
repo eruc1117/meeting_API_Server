@@ -16,8 +16,8 @@ describe('Schedule API 測試', () => {
         email: 'sched@example.com',
         username: 'schedule',
         account: 'scheduser',
-        password: 'password123',
-        passwordChk: 'password123'
+        password: 'Password123',
+        passwordChk: 'Password123'
       });
 
     token = userRes.body.data.token;

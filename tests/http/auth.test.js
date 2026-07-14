@@ -14,8 +14,8 @@ describe('POST /api/auth/register', () => {
         email: 'user@example.com',
         username: 'user',
         account: 'account01',
-        password: 'password123',
-        passwordChk: 'password123'
+        password: 'Password123',
+        passwordChk: 'Password123'
       });
     expect(res.statusCode).toBe(200);
     expect(res.body).toEqual({
@@ -34,8 +34,8 @@ describe('POST /api/auth/register', () => {
         email: 'invalid-email',
         username: 'user2',
         account: 'account02',
-        password: 'password123',
-        passwordChk: 'password123'
+        password: 'Password123',
+        passwordChk: 'Password123'
       });
 
     expect(res.statusCode).toBe(400);
@@ -53,8 +53,8 @@ describe('POST /api/auth/register', () => {
         email: 'user3@example.com',
         username: 'user3',
         account: 'account03',
-        password: 'password123',
-        passwordChk: 'password321'
+        password: 'Password123',
+        passwordChk: 'Password321'
       });
 
     expect(res.statusCode).toBe(400);
@@ -72,8 +72,8 @@ describe('POST /api/auth/register', () => {
         email: 'dup@example.com',
         username: 'dup',
         account: 'dupuser',
-        password: 'password123',
-        passwordChk: 'password123'
+        password: 'Password123',
+        passwordChk: 'Password123'
       });
 
     const res = await request(app)
@@ -82,8 +82,8 @@ describe('POST /api/auth/register', () => {
         email: 'dup@example.com',
         username: 'dup',
         account: 'dupuser',
-        password: 'password123',
-        passwordChk: 'password123'
+        password: 'Password123',
+        passwordChk: 'Password123'
       });
 
     expect(res.statusCode).toBe(409);
@@ -100,14 +100,17 @@ describe('PUT /api/auth/updatePassword', () => {
     email: 'pwupdate@example.com',
     username: 'pwupdate',
     account: 'pwupdateuser',
-    password: 'oldPassword123',
-    passwordChk: 'oldPassword123'
+    password: 'OldPassword123',
+    passwordChk: 'OldPassword123'
   };
   let userId;
+  let token;
 
   beforeAll(async () => {
+    await db.query('DELETE FROM users WHERE email = $1', [userInfo.email]);
     const res = await request(app).post('/api/auth/register').send(userInfo);
     userId = res.body.data.user.id;
+    token = res.body.data.token;
   });
 
   afterAll(async () => {
@@ -117,10 +120,10 @@ describe('PUT /api/auth/updatePassword', () => {
   it('should return 200 on successful password update', async () => {
     const res = await request(app)
       .put('/api/auth/updatePassword')
+      .set('Authorization', `Bearer ${token}`)
       .send({
-        account: userInfo.account,
         oirPassword: userInfo.password,
-        newPassword: 'newPassword456'
+        newPassword: 'NewPassword456'
       });
 
     expect(res.statusCode).toBe(200);
@@ -133,10 +136,10 @@ describe('PUT /api/auth/updatePassword', () => {
   it('should return 401 if old password is incorrect', async () => {
     const res = await request(app)
       .put('/api/auth/updatePassword')
+      .set('Authorization', `Bearer ${token}`)
       .send({
-        account: userInfo.account,
-        oirPassword: 'wrongPassword',
-        newPassword: 'newPassword456'
+        oirPassword: 'WrongPassword999',
+        newPassword: 'NewPassword456'
       });
 
     expect(res.statusCode).toBe(401);
@@ -147,13 +150,25 @@ describe('PUT /api/auth/updatePassword', () => {
     });
   });
 
-  it('should return 401 if account does not exist', async () => {
+  it('should return 401 if user was deleted after token issued', async () => {
+    const ghostUser = {
+      email: 'ghost_del@example.com',
+      username: 'ghostdel',
+      account: 'ghostdeluser',
+      password: 'GhostPassword1',
+      passwordChk: 'GhostPassword1'
+    };
+    const regRes = await request(app).post('/api/auth/register').send(ghostUser);
+    const ghostToken = regRes.body.data.token;
+    const ghostId = regRes.body.data.user.id;
+    await db.query('DELETE FROM users WHERE id = $1', [ghostId]);
+
     const res = await request(app)
       .put('/api/auth/updatePassword')
+      .set('Authorization', `Bearer ${ghostToken}`)
       .send({
-        account: 'nonexistent',
-        oirPassword: 'anyPassword',
-        newPassword: 'newPassword456'
+        oirPassword: ghostUser.password,
+        newPassword: 'NewPassword456'
       });
 
     expect(res.statusCode).toBe(401);
@@ -173,8 +188,8 @@ describe('POST /api/auth/login', () => {
     email: 'sched@example.com',
     username: 'schedule',
     account: 'scheduser',
-    password: 'password123',
-    passwordChk: 'password123'
+    password: 'Password123',
+    passwordChk: 'Password123'
   };
 
   beforeAll(async () => {
@@ -219,7 +234,7 @@ describe('POST /api/auth/login', () => {
       .post('/api/auth/login')
       .send({
         account: 'nonexistent@example.com',
-        password: 'password123'
+        password: 'Password123'
       });
 
     expect(res.statusCode).toBe(404);
@@ -235,7 +250,7 @@ describe('POST /api/auth/login', () => {
       .post('/api/auth/login')
       .send({
         account: userIno.account,
-        password: 'wrongpassword'
+        password: 'WrongPassword999'
       });
 
     expect(res.statusCode).toBe(401);
