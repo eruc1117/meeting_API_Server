@@ -3,6 +3,13 @@ const app = require('../../app');
 const db = require('../../db');
 require('dotenv').config();
 
+// 動態日期，避免寫死日期隨時間超出 validateDateTime 允許範圍
+const hoursFromNow = (h) => new Date(Date.now() + h * 3600 * 1000).toISOString();
+const SLOT1_START = hoursFromNow(24), SLOT1_END = hoursFromNow(25);   // create / conflict
+const SLOT2_START = hoursFromNow(48), SLOT2_END = hoursFromNow(49);   // update
+const SLOT3_START = hoursFromNow(72), SLOT3_END = hoursFromNow(73);   // attend
+const SLOT4_START = hoursFromNow(96), SLOT4_END = hoursFromNow(97);   // attend-then-leave
+
 describe('Schedule API 測試', () => {
   let token;
   let userId;
@@ -38,8 +45,8 @@ describe('Schedule API 測試', () => {
         .send({
           title: 'Meeting with John',
           description: 'Discuss project details',
-          start_time: '2025-05-08 09:00:00',
-          end_time: '2025-05-08 10:00:00',
+          start_time: SLOT1_START,
+          end_time: SLOT1_END,
           is_public: true
         });
 
@@ -54,8 +61,8 @@ describe('Schedule API 測試', () => {
         .post('/api/schedules/create')
         .set('Authorization', `Bearer ${token}`)
         .send({
-          start_time: '2025-05-08 09:00:00',
-          end_time: '2025-05-08 10:00:00'
+          start_time: SLOT1_START,
+          end_time: SLOT1_END
         });
 
       expect(res.statusCode).toBe(400);
@@ -70,8 +77,8 @@ describe('Schedule API 測試', () => {
         .send({
           title: 'Meeting with John',
           description: 'Discuss project details',
-          start_time: '2025-05-08 09:00:00',
-          end_time: '2025-05-08 10:00:00'
+          start_time: SLOT1_START,
+          end_time: SLOT1_END
         });
 
       expect(res.statusCode).toBe(409);
@@ -82,7 +89,7 @@ describe('Schedule API 測試', () => {
     it('未提供 JWT 應回傳 401', async () => {
       const res = await request(app)
         .post('/api/schedules/create')
-        .send({ title: 'Unauthorized', start_time: '2025-05-08 09:00:00', end_time: '2025-05-08 10:00:00' });
+        .send({ title: 'Unauthorized', start_time: SLOT1_START, end_time: SLOT1_END });
 
       expect(res.statusCode).toBe(401);
       expect(res.body.message).toBe('帳號尚未登入');
@@ -109,8 +116,8 @@ describe('Schedule API 測試', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({
           user_id: userId,
-          start_time: '2025-01-01T00:00:00',
-          end_time: '2025-12-31T23:59:59'
+          start_time: hoursFromNow(-24),
+          end_time: hoursFromNow(24 * 10)
         });
 
       expect(res.statusCode).toBe(200);
@@ -138,8 +145,8 @@ describe('Schedule API 測試', () => {
         .send({
           title: 'Before Update',
           description: 'Before',
-          start_time: '2025-05-08 11:00:00',
-          end_time: '2025-05-08 12:00:00',
+          start_time: SLOT2_START,
+          end_time: SLOT2_END,
           is_public: true
         });
 
@@ -153,8 +160,8 @@ describe('Schedule API 測試', () => {
         .send({
           title: 'Updated Title',
           description: 'Updated Description',
-          start_time: '2025-05-08 11:00:00',
-          end_time: '2025-05-08 12:00:00',
+          start_time: SLOT2_START,
+          end_time: SLOT2_END,
           is_public: true
         });
 
@@ -169,8 +176,8 @@ describe('Schedule API 測試', () => {
         .send({
           title: 'Updated Title',
           description: 'Updated Description',
-          start_time: '2025-05-08 11:00:00',
-          end_time: '2025-05-08 12:00:00'
+          start_time: SLOT2_START,
+          end_time: SLOT2_END
         });
 
       expect(res.statusCode).toBe(404);
@@ -228,8 +235,8 @@ describe('Schedule API 測試', () => {
         .send({
           title: 'Open Event',
           description: 'Open to all',
-          start_time: '2025-06-01 09:00:00',
-          end_time: '2025-06-01 10:00:00',
+          start_time: SLOT3_START,
+          end_time: SLOT3_END,
           is_public: true
         });
 
@@ -271,8 +278,8 @@ describe('Schedule API 測試', () => {
         .send({
           title: 'Attend Then Leave',
           description: 'test',
-          start_time: '2025-07-01 09:00:00',
-          end_time: '2025-07-01 10:00:00',
+          start_time: SLOT4_START,
+          end_time: SLOT4_END,
           is_public: true
         });
 
