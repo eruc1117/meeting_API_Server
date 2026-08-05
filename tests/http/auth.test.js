@@ -229,7 +229,8 @@ describe('POST /api/auth/login', () => {
     });
   });
 
-  it('should return 401 if account not exists', async () => {
+  // H-04：帳號不存在與密碼錯誤回傳相同訊息與錯誤碼（防帳號枚舉）
+  it('should return 401 with generic error if account not exists', async () => {
     const res = await request(app)
       .post('/api/auth/login')
       .send({
@@ -237,15 +238,15 @@ describe('POST /api/auth/login', () => {
         password: 'Password123'
       });
 
-    expect(res.statusCode).toBe(404);
+    expect(res.statusCode).toBe(401);
     expect(res.body).toEqual({
-      message: '登入失敗，帳號不存在',
+      message: '登入失敗，帳號或密碼錯誤',
       data: {},
-      error: { code: 'E008_ACCOUNT_NOT_EXIST' }
+      error: { code: 'E003_INVALID_CREDENTIALS' }
     });
   });
 
-  it('should return 401 if password is incorrect', async () => {
+  it('should return 401 with generic error if password is incorrect', async () => {
     const res = await request(app)
       .post('/api/auth/login')
       .send({
@@ -255,7 +256,7 @@ describe('POST /api/auth/login', () => {
 
     expect(res.statusCode).toBe(401);
     expect(res.body).toEqual({
-      message: '登入失敗，帳號密碼錯誤',
+      message: '登入失敗，帳號或密碼錯誤',
       data: {},
       error: { code: 'E003_INVALID_CREDENTIALS' }
     });

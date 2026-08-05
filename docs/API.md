@@ -116,25 +116,14 @@
   }
 }
 ```
-####  失敗 (404 Unauthorized):
-
-```json
-{
-  "message": "登入失敗，帳號不存在",
-  "data" : {
-  },
-  "error": {
-    "code" : "E008_ACCOUNT_NOT_EXIST"
-  }
-}
-
-```
-
 ####  失敗 (401 Unauthorized):
 
+> 安全性說明（2026-08-05）：帳號不存在與密碼錯誤統一回傳相同訊息與錯誤碼，
+> 防止帳號枚舉攻擊。`E008_ACCOUNT_NOT_EXIST` 已不再於登入 API 使用。
+
 ```json
 {
-  "message": "登入失敗，帳號密碼錯誤",
+  "message": "登入失敗，帳號或密碼錯誤",
   "data" : {
   },
   "error": {
