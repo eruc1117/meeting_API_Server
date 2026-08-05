@@ -28,7 +28,7 @@ class UserController {
       const result = await UserService.getUserInfo(id);
       sendResponse(res, result, 200);
     } catch (error) {
-      console.error('getUserInfo ---> ', error);
+      console.error('getUserInfo error');
       res.status(500).json({ message: 'Internal server error' });
     }
   }

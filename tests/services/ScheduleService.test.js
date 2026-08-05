@@ -170,12 +170,24 @@ describe('ScheduleService.attendSchedule', () => {
   });
 
   it('活動參加成功，回傳成功訊息', async () => {
-    db.query.mockResolvedValueOnce({ rows: [{ id: 1, is_open: true }] });
-    db.query.mockResolvedValueOnce({ rows: [{ user_id: 1, schedule_id: 1 }] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: 1, is_open: true }] }); // 活動存在
+    db.query.mockResolvedValueOnce({ rows: [] });                          // 尚未參加（M-09）
+    db.query.mockResolvedValueOnce({ rows: [{ user_id: 1, schedule_id: 1 }] }); // INSERT
 
     const result = await ScheduleService.attendSchedule(1, 1);
     expect(result.message).toBe('活動參加成功');
     expect(result.data).toEqual({});
+  });
+
+  // M-09：重複參加需回傳衝突錯誤，不可重複寫入
+  it('重複參加同一活動，回傳 E006 錯誤', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ id: 1, is_open: true }] }); // 活動存在
+    db.query.mockResolvedValueOnce({ rows: [{ '?column?': 1 }] });        // 已參加
+
+    const result = await ScheduleService.attendSchedule(1, 1);
+    expect(result.message).toBe('活動參加失敗，已參加該活動');
+    expect(result.error.code).toBe('E006_SCHEDULE_CONFLICT');
+    expect(db.query).toHaveBeenCalledTimes(2); // 不應執行 INSERT
   });
 
   it('活動不存在或已關閉，回傳失敗訊息', async () => {

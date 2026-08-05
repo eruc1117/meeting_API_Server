@@ -172,6 +172,19 @@ class ScheduleService {
         };
       }
 
+      // M-09 修正：防止重複參加造成 participants 重複列（資料膨脹）
+      const dup = await db.query(
+        'SELECT 1 FROM participants WHERE user_id = $1 AND schedule_id = $2',
+        [user_id, schedule_id]
+      );
+      if (dup.rows.length > 0) {
+        return {
+          message: '活動參加失敗，已參加該活動',
+          data: {},
+          error: { code: 'E006_SCHEDULE_CONFLICT' }
+        };
+      }
+
       await db.query(
         'INSERT INTO participants (user_id, schedule_id, joined_at) VALUES ($1, $2, NOW())',
         [user_id, schedule_id]

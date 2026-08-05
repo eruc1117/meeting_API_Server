@@ -38,4 +38,16 @@ app.use(express.urlencoded({ limit: '10kb', extended: true }));
 app.use(logger);
 app.use('/api', routes); // 掛載統一前綴 /api
 
+// M-10 修正：統一 404 回應，避免 Express 預設 HTML 錯誤頁
+app.use((req, res) => {
+  res.status(404).json({ message: '資源不存在', error: { code: 'E007_NOT_FOUND' } });
+});
+
+// M-10 修正：全域錯誤處理器 — 不回傳 stack trace 等內部細節
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err.message);
+  const status = err.status || err.statusCode || 500;
+  res.status(status).json({ message: '伺服器錯誤', error: { code: 'E000_INTERNAL_ERROR' } });
+});
+
 module.exports = app;
