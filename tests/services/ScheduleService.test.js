@@ -5,6 +5,10 @@ const db = require('../../db');
 jest.mock('../../db');
 jest.mock("../../models/Schedule");
 
+// 使用動態日期，避免寫死日期隨時間超出 validateDateTime 允許範圍
+const START_TIME = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+const END_TIME = new Date(Date.now() + 25 * 3600 * 1000).toISOString();
+
 describe('ScheduleService.createSchedule', () => {
 
   const mockSchedule = {
@@ -12,8 +16,8 @@ describe('ScheduleService.createSchedule', () => {
     user_id: 1,
     title: 'Meeting',
     description: 'Discuss project',
-    start_time: '2025-05-08T09:00:00',
-    end_time: '2025-05-08T10:00:00',
+    start_time: START_TIME,
+    end_time: END_TIME,
     is_public: true,
     location: '會議室 A',
     participants: '小明',
@@ -30,7 +34,7 @@ describe('ScheduleService.createSchedule', () => {
     db.query.mockReturnValueOnce({ rows: [mockSchedule] });
 
     const result = await ScheduleService.createSchedule(
-      1, 'Meeting', 'Discuss project', '2025-05-08T09:00:00', '2025-05-08T10:00:00', true, '會議室 A', '小明'
+      1, 'Meeting', 'Discuss project', START_TIME, END_TIME, true, '會議室 A', '小明'
     );
 
     expect(result.message).toBe('活動建立成功');
@@ -38,7 +42,7 @@ describe('ScheduleService.createSchedule', () => {
   });
 
   it('資料未提供，回傳錯誤訊息', async () => {
-    const result = await ScheduleService.createSchedule(null, '', '', '2025-05-08T09:00:00', '2025-05-08T10:00:00', true);
+    const result = await ScheduleService.createSchedule(null, '', '', START_TIME, END_TIME, true);
     expect(result.message).toBe('活動建立失敗，資料未提供');
     expect(result.error.code).toBe('E012_MISSING_FIELDS');
   });
@@ -47,7 +51,7 @@ describe('ScheduleService.createSchedule', () => {
     Schedule.findEvent.mockResolvedValue([mockSchedule]);
 
     const result = await ScheduleService.createSchedule(
-      1, 'Repeat Meeting', 'Discuss project', '2025-05-08T09:00:00', '2025-05-08T10:00:00', true, null, null
+      1, 'Repeat Meeting', 'Discuss project', START_TIME, END_TIME, true, null, null
     );
 
     expect(result.message).toBe('活動建立失敗，時段重複');
@@ -60,7 +64,7 @@ describe('ScheduleService.createSchedule', () => {
 describe('ScheduleService.getSchedulesByUserId', () => {
   it('should return schedules for user', async () => {
     const mockSchedules = [
-      { id: 1, user_id: 1, title: 'Meeting', start_time: '2025-05-08T09:00:00', is_public: true, location: '會議室 A', participants: '小明' }
+      { id: 1, user_id: 1, title: 'Meeting', start_time: START_TIME, is_public: true, location: '會議室 A', participants: '小明' }
     ];
     db.query.mockResolvedValue({ rows: mockSchedules });
 
@@ -166,12 +170,24 @@ describe('ScheduleService.attendSchedule', () => {
   });
 
   it('活動參加成功，回傳成功訊息', async () => {
-    db.query.mockResolvedValueOnce({ rows: [{ id: 1, is_open: true }] });
-    db.query.mockResolvedValueOnce({ rows: [{ user_id: 1, schedule_id: 1 }] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: 1, is_open: true }] }); // 活動存在
+    db.query.mockResolvedValueOnce({ rows: [] });                          // 尚未參加（M-09）
+    db.query.mockResolvedValueOnce({ rows: [{ user_id: 1, schedule_id: 1 }] }); // INSERT
 
     const result = await ScheduleService.attendSchedule(1, 1);
     expect(result.message).toBe('活動參加成功');
     expect(result.data).toEqual({});
+  });
+
+  // M-09：重複參加需回傳衝突錯誤，不可重複寫入
+  it('重複參加同一活動，回傳 E006 錯誤', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ id: 1, is_open: true }] }); // 活動存在
+    db.query.mockResolvedValueOnce({ rows: [{ '?column?': 1 }] });        // 已參加
+
+    const result = await ScheduleService.attendSchedule(1, 1);
+    expect(result.message).toBe('活動參加失敗，已參加該活動');
+    expect(result.error.code).toBe('E006_SCHEDULE_CONFLICT');
+    expect(db.query).toHaveBeenCalledTimes(2); // 不應執行 INSERT
   });
 
   it('活動不存在或已關閉，回傳失敗訊息', async () => {

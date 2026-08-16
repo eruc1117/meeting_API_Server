@@ -4,6 +4,9 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
 
+// H-04 修正：帳號不存在時仍執行一次 bcrypt 比較，避免以回應時間差異枚舉帳號
+const DUMMY_HASH = '$2b$10$.8jxYVSAbRomib8iHVmZFO9AznCGttMKODFmYk5cUsiuBY3ojfmvy';
+
 class AuthService {
   static async register(email, username, account, password, passwordChk) {
     try {
@@ -32,7 +35,8 @@ class AuthService {
         };
       }
 
-      const existingUser = await User.findByEmailOrUsername(email, account);
+      // H-03 修正：原本少傳 username 導致 account 重複檢查失效（$3 恆為 null）
+      const existingUser = await User.findByEmailOrUsername(email, username, account);
 
       if (existingUser) {
         return {
@@ -68,18 +72,13 @@ class AuthService {
   static async login(account, password) {
     try {
       const user = await User.findByAccountOrEmail(account);
-      if (!user) {
-        return {
-          message: '登入失敗，帳號不存在',
-          data: {},
-          error: { code: 'E008_ACCOUNT_NOT_EXIST' }
-        };
-      }
 
-      const isMatch = await bcrypt.compare(password, user.password_hash);
-      if (!isMatch) {
+      // H-04 修正：帳號不存在與密碼錯誤回傳相同訊息與錯誤碼，
+      // 且不存在時仍執行 dummy bcrypt 比較，防止帳號枚舉（訊息差異／時間差異）
+      const isMatch = await bcrypt.compare(password, user ? user.password_hash : DUMMY_HASH);
+      if (!user || !isMatch) {
         return {
-          message: '登入失敗，帳號密碼錯誤',
+          message: '登入失敗，帳號或密碼錯誤',
           data: {},
           error: { code: 'E003_INVALID_CREDENTIALS' }
         };

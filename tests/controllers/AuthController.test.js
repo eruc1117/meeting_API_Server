@@ -192,19 +192,20 @@ describe('AuthController.login', () => {
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: '登入成功' }));
   });
 
-  it('should return 404 if user does not exist', async () => {
+  // H-04：帳號不存在時 service 回傳與密碼錯誤相同的 E003（防帳號枚舉），應對映 401
+  it('should return 401 if user does not exist', async () => {
     const req = { body: { account: 'user@example.com', password: 'password123' } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
     const mockResult = {
-      message: '登入失敗，帳號不存在',
-      error: { code: 'E008_ACCOUNT_NOT_EXIST' }
+      message: '登入失敗，帳號或密碼錯誤',
+      error: { code: 'E003_INVALID_CREDENTIALS' }
     };
 
     AuthService.login.mockResolvedValue(mockResult);
 
     await AuthController.login(req, res);
-    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith(mockResult);
   });
 

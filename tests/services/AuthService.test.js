@@ -54,6 +54,8 @@ describe('AuthService.register', () => {
     expect(result.message).toBe('使用者註冊成功');
     expect(result.data.user.id).toBe(1);
     expect(result.data.token).toBe('JWT-TOKEN');
+    // H-03：重複檢查必須帶齊 email / username / account 三個參數
+    expect(User.findByEmailOrUsername).toHaveBeenCalledWith('user@example.com', 'username', 'account');
     expect(User.create).toHaveBeenCalledWith('user@example.com', 'username', 'account', 'hashedpassword');
     expect(jwt.sign).toHaveBeenCalledWith({ id: 1 }, process.env.SECRET, { expiresIn: '1h' });
   });
@@ -138,19 +140,23 @@ describe('AuthService.login', () => {
     expect(bcrypt.compare).toHaveBeenCalledWith('password123', 'hashedpw');
   });
 
-  it('should return error if user does not exist', async () => {
+  // H-04：帳號不存在與密碼錯誤需回傳相同訊息與錯誤碼（防帳號枚舉）
+  it('should return generic error if user does not exist', async () => {
     User.findByAccountOrEmail.mockResolvedValue(null);
+    bcrypt.compare.mockResolvedValue(false);
     const result = await AuthService.login('wrong@example.com', '123');
-    expect(result.message).toBe('登入失敗，帳號不存在');
+    expect(result.message).toBe('登入失敗，帳號或密碼錯誤');
     expect(result.data).toEqual({});
-    expect(result.error.code).toBe('E008_ACCOUNT_NOT_EXIST');
+    expect(result.error.code).toBe('E003_INVALID_CREDENTIALS');
+    // 即使帳號不存在也要執行一次 bcrypt 比較（時間差防護）
+    expect(bcrypt.compare).toHaveBeenCalled();
   });
 
-  it('should return 401 if password is incorrect', async () => {
+  it('should return generic error if password is incorrect', async () => {
     User.findByAccountOrEmail.mockResolvedValue({ id: 1, password_hash: 'hash' });
     bcrypt.compare.mockResolvedValue(false);
     const result = await AuthService.login('user@example.com', '123');
-    expect(result.message).toBe('登入失敗，帳號密碼錯誤');
+    expect(result.message).toBe('登入失敗，帳號或密碼錯誤');
     expect(result.data).toEqual({});
     expect(result.error.code).toBe('E003_INVALID_CREDENTIALS');
   });

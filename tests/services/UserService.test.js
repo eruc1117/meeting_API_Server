@@ -20,7 +20,8 @@ describe('UserService.searchUsers', () => {
     expect(result.error.code).toBe('E012_MISSING_FIELDS');
   });
 
-  it('should return matching users on success', async () => {
+  // M-08：搜尋結果的 email 需遮罩，不得回傳完整信箱
+  it('should return matching users with masked emails on success', async () => {
     const mockUsers = [
       { id: 1, username: '小明', email: 'ming@example.com' },
       { id: 5, username: '小明2', email: 'ming2@example.com' }
@@ -29,8 +30,18 @@ describe('UserService.searchUsers', () => {
 
     const result = await UserService.searchUsers('小明');
     expect(result.message).toBe('查詢成功');
-    expect(result.data.users).toEqual(mockUsers);
+    expect(result.data.users).toEqual([
+      { id: 1, username: '小明', email: 'm***@example.com' },
+      { id: 5, username: '小明2', email: 'm***@example.com' }
+    ]);
     expect(User.searchByKeyword).toHaveBeenCalledWith('小明');
+  });
+
+  // M-08：查詢字串長度上限 100
+  it('should return E011 if q is too long', async () => {
+    const result = await UserService.searchUsers('a'.repeat(101));
+    expect(result.error.code).toBe('E011_DATA_TYPE_ERROR');
+    expect(User.searchByKeyword).not.toHaveBeenCalled();
   });
 
   it('should return empty array if no users match', async () => {

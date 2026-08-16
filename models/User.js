@@ -48,9 +48,11 @@ class User {
   }
 
   static async searchByKeyword(keyword, limit = 20) {
+    // M-07 修正：跳脫 ILIKE 萬用字元，避免使用者以 % / _ 改變搜尋語意
+    const escaped = keyword.replace(/[\\%_]/g, '\\$&');
     const result = await db.query(
       'SELECT id, username, email FROM users WHERE username ILIKE $1 OR email ILIKE $1 LIMIT $2',
-      [`%${keyword}%`, limit]
+      [`%${escaped}%`, limit]
     );
     return result.rows;
   }

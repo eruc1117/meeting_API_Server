@@ -29,7 +29,9 @@ describe('validateEmail', () => {
 
 describe('isValidDateTimeString', () => {
   it('should return true for valid ISO 8601 datetime string', () => {
-    expect(validator.validateDateTime('2025-05-24T09:00:00')).toBe(true);
+    // 使用動態日期，避免寫死日期隨時間超出 validateDateTime 允許範圍
+    const nextWeek = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();
+    expect(validator.validateDateTime(nextWeek)).toBe(true);
   });
 
   it('should return false for empty string', () => {
