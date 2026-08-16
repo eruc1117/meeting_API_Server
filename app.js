@@ -35,6 +35,9 @@ app.use(globalLimiter);
 
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ limit: '10kb', extended: true }));
+// 健康檢查：供 Docker healthcheck / 負載平衡器探測，不經過 logger 與認證
+app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+
 app.use(logger);
 app.use('/api', routes); // 掛載統一前綴 /api
 
