@@ -810,3 +810,44 @@ Authorization: Bearer <JWT-TOKEN>
   "message": "帳號尚未登入"
 }
 ```
+
+---
+
+## 4. 股票儀表板代理 API（`/api/stock/*`）
+
+行事曆平台的「股票」分頁用的唯讀代理。後端以服務帳號登入 erucMoney 的 Node API（`STOCK_API_URL`），
+把前端的 GET 請求轉過去；行事曆使用者只需要自己的 JWT。
+
+### 4.1 上游狀態（`GET /api/stock/health`）
+
+- 需 `Authorization: Bearer <JWT>`
+- 成功：`200 { "data": { "online": true, "upstream": { "ok": true, "time": "..." } } }`
+- 上游離線：`502 { "message": "...", "error": { "code": "E502_STOCK_UPSTREAM" }, "data": { "online": false } }`
+- 未設定服務帳號：`503 { "error": { "code": "E503_STOCK_NOT_CONFIGURED" } }`
+
+### 4.2 轉發（`GET /api/stock/<path>?<query>`）
+
+白名單（其餘一律 `403 E403_STOCK_PATH`）：
+
+| 路徑 | 說明 |
+|------|------|
+| `/stocks?tracked=true` | 追蹤股票 + 最新收盤、漲跌、外資持股 |
+| `/stocks?max_price=&industry=` | 依預算篩選 |
+| `/stocks/industries` | 產業清單 |
+| `/stocks/:id` | 個股基本資訊 |
+| `/stocks/:id/prices?days=` / `/chips` / `/institutional` | 行情、籌碼、法人 |
+| `/forecast/weekly`、`/forecast/weekly/status` | 每週全模型預測 |
+| `/catalog` | 模型目錄 |
+| `/predictions/:id`、`/voting/results` | 預測與投票結果 |
+
+回應：`200 { "data": <上游原始 JSON> }`。上游 4xx／5xx → `502 E502_STOCK_UPSTREAM`（404 保留 404），
+上游 token 失效會自動重新登入一次。
+
+### 4.3 錯誤碼
+
+| 代碼 | HTTP | 說明 |
+|------|------|------|
+| `E403_STOCK_PATH` | 403 | 不在白名單的路徑 |
+| `E503_STOCK_NOT_CONFIGURED` | 503 | 未設定 `STOCK_API_USER / STOCK_API_PASSWORD` |
+| `E502_STOCK_AUTH` | 502 | 服務帳號登入上游失敗 |
+| `E502_STOCK_UPSTREAM` | 502 | 上游連線失敗、逾時或回錯誤 |

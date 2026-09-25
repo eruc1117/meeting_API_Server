@@ -74,6 +74,18 @@
 | DELETE | `/api/schedules/delete/:id` | 刪除行程（需 JWT） |
 | POST | `/api/schedules/query` | 查詢時間範圍內行程（需 JWT） |
 
+### 股票（`/api/stock`，唯讀代理）
+
+| 方法 | 路徑 | 說明 |
+|------|------|------|
+| GET | `/api/stock/health` | 上游股票服務（erucMoney）是否在線（需 JWT） |
+| GET | `/api/stock/stocks?tracked=true` | 追蹤股票最新行情（需 JWT） |
+| GET | `/api/stock/stocks/:id/prices?days=` | 個股行情（需 JWT） |
+| GET | `/api/stock/forecast/weekly` | 每週全模型預測（需 JWT） |
+
+只轉發白名單內的 GET 端點（行情、產業、週預測、模型目錄）；持股、交易、帳號與管理端點不轉發，
+要在 erucMoney 自己的畫面用它的帳號操作。上游連線用 `STOCK_API_URL / STOCK_API_USER / STOCK_API_PASSWORD` 的服務帳號。
+
 詳細請求／回應格式請參考 [docs/API.md](docs/API.md)。
 
 ---
@@ -106,6 +118,12 @@ JWT_SECRET=your_jwt_secret
 
 PORT=3000
 NODE_ENV=development
+
+# 股票儀表板唯讀代理（/api/stock/*，選填；沒設就回 503）
+# 上游是 erucMoney（https://github.com/eruc1117/erucMoney）的 Node API，用一個服務帳號登入
+STOCK_API_URL=https://api.erucmoney.com
+STOCK_API_USER=calendar-svc
+STOCK_API_PASSWORD=your_stock_service_password
 ```
 
 ### 啟動
