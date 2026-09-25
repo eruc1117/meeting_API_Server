@@ -45,7 +45,7 @@ class AuthService {
       const passwordHash = await bcrypt.hash(password, 10);
       const newUserId = await User.create(email, username, account, passwordHash);
 
-      const token = jwt.sign({ id: newUserId }, process.env.SECRET, { expiresIn: '1h' });
+      const token = jwt.sign({ id: newUserId, username }, process.env.SECRET, { expiresIn: '1h' });
 
       return {
         message: '使用者註冊成功',
@@ -85,7 +85,7 @@ class AuthService {
         };
       }
 
-      const token = jwt.sign({ id: user.id }, process.env.SECRET, { expiresIn: '1h' });
+      const token = jwt.sign({ id: user.id, username: user.username }, process.env.SECRET, { expiresIn: '1h' });
 
       return {
         message: '登入成功',

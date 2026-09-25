@@ -815,15 +815,17 @@ Authorization: Bearer <JWT-TOKEN>
 
 ## 4. 股票儀表板代理 API（`/api/stock/*`）
 
-行事曆平台的「股票」分頁用的唯讀代理。後端以服務帳號登入 erucMoney 的 Node API（`STOCK_API_URL`），
-把前端的 GET 請求轉過去；行事曆使用者只需要自己的 JWT。
+行事曆平台的「股票」分頁用的唯讀代理。**登入系統只有一套**：本專案簽的 JWT（payload `{ id, username }`，1 小時）
+原樣轉給 erucMoney 的 Node API（`STOCK_API_URL`）；erucMoney 的 `JWT_SECRET` 與本專案的 `SECRET` 相同，
+它驗過 token 後以 `external_id = id` 對應（第一次自動建立）自己的使用者列，持股與交易台帳因此是使用者自己的。
+前端開啟 erucMoney 完整儀表板時，把同一個 token 放在網址片段 `#token=…` 交接，那邊不用再登入。
 
 ### 4.1 上游狀態（`GET /api/stock/health`）
 
 - 需 `Authorization: Bearer <JWT>`
 - 成功：`200 { "data": { "online": true, "upstream": { "ok": true, "time": "..." } } }`
 - 上游離線：`502 { "message": "...", "error": { "code": "E502_STOCK_UPSTREAM" }, "data": { "online": false } }`
-- 未設定服務帳號：`503 { "error": { "code": "E503_STOCK_NOT_CONFIGURED" } }`
+- 沒帶 token：`401 E004_UNAUTHORIZED`
 
 ### 4.2 轉發（`GET /api/stock/<path>?<query>`）
 
@@ -839,15 +841,17 @@ Authorization: Bearer <JWT-TOKEN>
 | `/forecast/weekly`、`/forecast/weekly/status` | 每週全模型預測 |
 | `/catalog` | 模型目錄 |
 | `/predictions/:id`、`/voting/results` | 預測與投票結果 |
+| `/holdings`、`/holdings/trades`、`/holdings/review` | 使用者自己的持股、交易台帳、建議 vs 實際 |
+| `/auth/me` | 使用者在股票系統的對應身分 |
 
-回應：`200 { "data": <上游原始 JSON> }`。上游 4xx／5xx → `502 E502_STOCK_UPSTREAM`（404 保留 404），
-上游 token 失效會自動重新登入一次。
+回應：`200 { "data": <上游原始 JSON> }`。上游 4xx／5xx → `502 E502_STOCK_UPSTREAM`（404 保留 404）；
+上游回 401 → `502 E502_STOCK_AUTH`（通常是兩邊密鑰不同）。
 
 ### 4.3 錯誤碼
 
 | 代碼 | HTTP | 說明 |
 |------|------|------|
 | `E403_STOCK_PATH` | 403 | 不在白名單的路徑 |
-| `E503_STOCK_NOT_CONFIGURED` | 503 | 未設定 `STOCK_API_USER / STOCK_API_PASSWORD` |
-| `E502_STOCK_AUTH` | 502 | 服務帳號登入上游失敗 |
+| `E004_UNAUTHORIZED` | 401 | 沒帶 token |
+| `E502_STOCK_AUTH` | 502 | 上游不接受這個 token（兩邊 JWT 密鑰不同） |
 | `E502_STOCK_UPSTREAM` | 502 | 上游連線失敗、逾時或回錯誤 |

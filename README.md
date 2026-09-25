@@ -82,9 +82,11 @@
 | GET | `/api/stock/stocks?tracked=true` | 追蹤股票最新行情（需 JWT） |
 | GET | `/api/stock/stocks/:id/prices?days=` | 個股行情（需 JWT） |
 | GET | `/api/stock/forecast/weekly` | 每週全模型預測（需 JWT） |
+| GET | `/api/stock/holdings` | 使用者自己在股票系統的持股（需 JWT；單一登入） |
 
-只轉發白名單內的 GET 端點（行情、產業、週預測、模型目錄）；持股、交易、帳號與管理端點不轉發，
-要在 erucMoney 自己的畫面用它的帳號操作。上游連線用 `STOCK_API_URL / STOCK_API_USER / STOCK_API_PASSWORD` 的服務帳號。
+**登入只有一套**：這裡簽的 JWT（payload 含 `id`、`username`）直接轉給 erucMoney，它用同一把密鑰驗證，
+第一次看到某個帳號會自動建立對應使用者；所以 `/api/stock/holdings` 看到的是使用者自己的持股。
+只轉發白名單內的 GET（行情、產業、週預測、模型目錄、自己的持股與台帳）；帳號管理、爬蟲、模型凍結等管理端點不轉發。
 
 詳細請求／回應格式請參考 [docs/API.md](docs/API.md)。
 
@@ -119,11 +121,9 @@ JWT_SECRET=your_jwt_secret
 PORT=3000
 NODE_ENV=development
 
-# 股票儀表板唯讀代理（/api/stock/*，選填；沒設就回 503）
-# 上游是 erucMoney（https://github.com/eruc1117/erucMoney）的 Node API，用一個服務帳號登入
+# 股票儀表板唯讀代理（/api/stock/*）：上游是 erucMoney（https://github.com/eruc1117/erucMoney）的 Node API
+# 單一登入：erucMoney 的 JWT_SECRET 必須設成和這裡的 SECRET 相同，使用者的 token 才能原樣轉過去
 STOCK_API_URL=https://api.erucmoney.com
-STOCK_API_USER=calendar-svc
-STOCK_API_PASSWORD=your_stock_service_password
 ```
 
 ### 啟動
