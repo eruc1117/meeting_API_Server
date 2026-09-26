@@ -7,7 +7,7 @@ const rateLimit = require('express-rate-limit');
 // 登入限制：每 IP 每分鐘最多 5 次（防暴力破解，短視窗快速鎖定）
 const loginLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 5,
+  max: Number(process.env.LOGIN_RATE_LIMIT) || 5,      // E2E 測試需要放寬（見 meeting_front_end/e2e/stack.js）
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: '登入嘗試次數過多，請稍後再試', error: { code: 'E429_RATE_LIMIT' } },
@@ -16,7 +16,7 @@ const loginLimiter = rateLimit({
 // 註冊限制：每 IP 每小時最多 10 次（防止大量假帳號）
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 10,
+  max: Number(process.env.REGISTER_RATE_LIMIT) || 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: '註冊次數過多，請稍後再試', error: { code: 'E429_RATE_LIMIT' } },
