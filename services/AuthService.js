@@ -4,6 +4,12 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
 
+// 整套平台共用的 admin 身分：.env 的 ADMIN_ACCOUNTS（帳號或 email，逗號分隔）在註冊／登入時自動升成 admin。
+// 之後的角色調整在管理 API（/api/admin/users）做；角色寫進 JWT，股票系統（erucMoney）也讀同一個 role。
+const bootstrapAdmins = () => new Set(String(process.env.ADMIN_ACCOUNTS || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean));
+const isBootstrapAdmin = (...ids) => ids.some((v) => v && bootstrapAdmins().has(String(v).toLowerCase()));
+const signToken = (user) => jwt.sign({ id: user.id, username: user.username, role: user.role || 'user' }, process.env.SECRET, { expiresIn: '1h' });
+
 class AuthService {
   static async register(email, username, account, password, passwordChk) {
     try {
@@ -44,13 +50,18 @@ class AuthService {
 
       const passwordHash = await bcrypt.hash(password, 10);
       const newUserId = await User.create(email, username, account, passwordHash);
+      let role = 'user';
+      if (isBootstrapAdmin(account, email)) {
+        await User.updateRole(newUserId, 'admin');
+        role = 'admin';
+      }
 
-      const token = jwt.sign({ id: newUserId, username }, process.env.SECRET, { expiresIn: '1h' });
+      const token = signToken({ id: newUserId, username, role });
 
       return {
         message: '使用者註冊成功',
         data: {
-          user: { id: newUserId },
+          user: { id: newUserId, username, role },
           token
         },
       };
@@ -85,7 +96,21 @@ class AuthService {
         };
       }
 
-      const token = jwt.sign({ id: user.id, username: user.username }, process.env.SECRET, { expiresIn: '1h' });
+      if (user.is_active === false) {
+        return {
+          message: '此帳號已停用',
+          data: {},
+          error: { code: 'E014_ACCOUNT_DISABLED' }
+        };
+      }
+
+      let role = user.role || 'user';
+      if (role !== 'admin' && isBootstrapAdmin(user.account, user.email)) {
+        await User.updateRole(user.id, 'admin');
+        role = 'admin';
+      }
+
+      const token = signToken({ id: user.id, username: user.username, role });
 
       return {
         message: '登入成功',
@@ -93,7 +118,8 @@ class AuthService {
           user: {
             id: user.id,
             email: user.email,
-            username: user.username
+            username: user.username,
+            role
           },
           token
         }

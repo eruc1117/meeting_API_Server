@@ -55,7 +55,7 @@ describe('AuthService.register', () => {
     expect(result.data.user.id).toBe(1);
     expect(result.data.token).toBe('JWT-TOKEN');
     expect(User.create).toHaveBeenCalledWith('user@example.com', 'username', 'account', 'hashedpassword');
-    expect(jwt.sign).toHaveBeenCalledWith({ id: 1 }, process.env.SECRET, { expiresIn: '1h' });
+    expect(jwt.sign).toHaveBeenCalledWith({ id: 1, username: 'username', role: 'user' }, process.env.SECRET, { expiresIn: '1h' });
   });
 });
 

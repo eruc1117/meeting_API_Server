@@ -74,6 +74,17 @@
 | DELETE | `/api/schedules/delete/:id` | 刪除行程（需 JWT） |
 | POST | `/api/schedules/query` | 查詢時間範圍內行程（需 JWT） |
 
+### 平台管理（`/api/admin`，需 admin）
+
+| 方法 | 路徑 | 說明 |
+|------|------|------|
+| GET | `/api/admin/users` | 列出所有使用者（角色、狀態） |
+| PUT | `/api/admin/users/:id` | 改角色 `role: user|admin` 或停用 `is_active` |
+| DELETE | `/api/admin/users/:id` | 刪除使用者 |
+
+**整套平台只有一種 admin**：`users.role` 寫進登入 JWT，行事曆的管理 API 與股票系統都讀它。
+第一個 admin 由 `.env` 的 `ADMIN_ACCOUNTS`（帳號或 email，逗號分隔）在註冊／登入時自動升級。
+
 ### 股票（`/api/stock`，代理到 erucMoney）
 
 | 方法 | 路徑 | 說明 |
@@ -127,6 +138,8 @@ NODE_ENV=development
 # 股票儀表板唯讀代理（/api/stock/*）：上游是 erucMoney（https://github.com/eruc1117/erucMoney）的 Node API
 # 單一登入：erucMoney 的 JWT_SECRET 必須設成和這裡的 SECRET 相同，使用者的 token 才能原樣轉過去
 STOCK_API_URL=https://api.erucmoney.com
+# 整套平台共用的 admin：這些帳號（account 或 email，逗號分隔）註冊／登入時自動升成 admin
+ADMIN_ACCOUNTS=
 ```
 
 ### 啟動

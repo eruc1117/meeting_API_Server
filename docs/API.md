@@ -815,7 +815,7 @@ Authorization: Bearer <JWT-TOKEN>
 
 ## 4. 股票儀表板代理 API（`/api/stock/*`）
 
-行事曆平台的「股票」分頁用的代理（Iteration 44 起儀表板全部功能都在統一前端，代理轉所有方法）。**登入系統只有一套**：本專案簽的 JWT（payload `{ id, username }`，1 小時）
+行事曆平台的「股票」分頁用的代理（Iteration 44 起儀表板全部功能都在統一前端，代理轉所有方法）。**登入系統只有一套**：本專案簽的 JWT（payload `{ id, username, role }`，1 小時）
 原樣轉給 erucMoney 的 Node API（`STOCK_API_URL`）；erucMoney 的 `JWT_SECRET` 與本專案的 `SECRET` 相同，
 它驗過 token 後以 `external_id = id` 對應（第一次自動建立）自己的使用者列，持股與交易台帳因此是使用者自己的。
 
@@ -849,3 +849,30 @@ Authorization: Bearer <JWT-TOKEN>
 | `E004_UNAUTHORIZED` | 401 | 沒帶 token |
 | `E502_STOCK_AUTH` | 502 | 上游不接受這個 token（兩邊 JWT 密鑰不同） |
 | `E502_STOCK_UPSTREAM` | 502 | 上游連線失敗、逾時或回錯誤 |
+
+## 5. 平台管理 API（`/api/admin/*`，需 admin）
+
+整套平台只有一種 admin 身分。`users.role`（`user` / `admin`）寫進登入 JWT（payload `{ id, username, role }`），
+行事曆的管理 API 與股票系統（erucMoney）都讀同一個 role：股票系統每次請求把 token 的 role 同步進自己的 users 表，
+所以在這裡升降級，股票那邊立刻跟著變。第一個 admin 由 `.env` 的 `ADMIN_ACCOUNTS`（帳號或 email，逗號分隔）在註冊或登入時自動升級。
+角色寫在 token 裡（1 小時），改了角色要對方重新登入才會反映在他的 token 上。
+
+- 全部需要 `Authorization: Bearer <JWT>` 且 role 為 admin；否則 `403 { "message": "需要管理者權限", "error": { "code": "E005_FORBIDDEN" } }`
+- 停用的帳號登入時回 `403 E014_ACCOUNT_DISABLED`
+
+### 5.1 列出使用者（`GET /api/admin/users`）
+
+`200 { "message": "查詢成功", "data": { "users": [ { "id", "email", "username", "account", "role", "is_active", "created_at" } ] } }`
+
+### 5.2 更新角色或狀態（`PUT /api/admin/users/:id`）
+
+Body：`{ "role": "admin" | "user" }` 或 `{ "is_active": true | false }`（可同時給）。
+
+- 成功：`200 { "message": "更新成功", "data": { "user": { … } } }`
+- 改自己：`403 E005_FORBIDDEN`；角色不是 user/admin：`400 E011_DATA_TYPE_ERROR`；沒給欄位：`400 E012_MISSING_FIELDS`；不存在：`404 E007_NOT_FOUND`
+
+### 5.3 刪除使用者（`DELETE /api/admin/users/:id`）
+
+行程、參與紀錄、訊息、聊天室成員隨外鍵一起刪；股票系統對應的使用者列與持股在那邊由 admin 另外處理。
+
+- 成功：`200 { "message": "刪除成功", "data": { "id": 5 } }`；刪自己：`403`；不存在：`404`

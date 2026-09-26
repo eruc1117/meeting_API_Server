@@ -14,6 +14,7 @@ function mapErrorCodeToStatusCode(errorCode) {
         E011_DATA_TYPE_ERROR: 400,
         E012_MISSING_FIELDS: 400,
         E013_WEAK_PASSWORD: 400,
+        E014_ACCOUNT_DISABLED: 403,
     };
 
     return map[errorCode] || 500; // fallback to 500 if not found

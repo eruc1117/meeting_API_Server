@@ -52,7 +52,8 @@ class UserService {
           id: user.id,
           email: user.email,
           username: user.username,
-          account: user.account
+          account: user.account,
+          role: user.role
         }
       };
     } catch (error) {
