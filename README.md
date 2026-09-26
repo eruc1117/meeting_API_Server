@@ -74,7 +74,7 @@
 | DELETE | `/api/schedules/delete/:id` | 刪除行程（需 JWT） |
 | POST | `/api/schedules/query` | 查詢時間範圍內行程（需 JWT） |
 
-### 股票（`/api/stock`，唯讀代理）
+### 股票（`/api/stock`，代理到 erucMoney）
 
 | 方法 | 路徑 | 說明 |
 |------|------|------|
@@ -83,10 +83,13 @@
 | GET | `/api/stock/stocks/:id/prices?days=` | 個股行情（需 JWT） |
 | GET | `/api/stock/forecast/weekly` | 每週全模型預測（需 JWT） |
 | GET | `/api/stock/holdings` | 使用者自己在股票系統的持股（需 JWT；單一登入） |
+| POST | `/api/stock/holdings/trades` | 記一筆交易（body 原樣轉上游） |
+| ANY | `/api/stock/<上游路徑>` | 其餘全部原樣轉：方法、query、body（`/auth/login`、`/auth/change-password` 除外） |
 
 **登入只有一套**：這裡簽的 JWT（payload 含 `id`、`username`）直接轉給 erucMoney，它用同一把密鑰驗證，
 第一次看到某個帳號會自動建立對應使用者；所以 `/api/stock/holdings` 看到的是使用者自己的持股。
-只轉發白名單內的 GET（行情、產業、週預測、模型目錄、自己的持股與台帳）；帳號管理、爬蟲、模型凍結等管理端點不轉發。
+統一前端把 erucMoney 儀表板的全部功能併進來了（Iteration 44），所以代理轉發所有方法與 body；
+權限由上游判斷：`/crawler`、`/models`、`/data`、`/auth/users` 在 erucMoney 要 admin，一般使用者會拿到 403。
 
 詳細請求／回應格式請參考 [docs/API.md](docs/API.md)。
 

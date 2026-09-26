@@ -33,7 +33,7 @@ const globalLimiter = rateLimit({
 });
 app.use(globalLimiter);
 
-app.use(express.json({ limit: '10kb' }));
+app.use(express.json({ limit: '256kb' }));   // 股票代理會轉新聞全文（NewsInput），10kb 不夠
 app.use(express.urlencoded({ limit: '10kb', extended: true }));
 app.use(logger);
 app.use('/api', routes); // 掛載統一前綴 /api

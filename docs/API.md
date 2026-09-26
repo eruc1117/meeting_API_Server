@@ -815,10 +815,9 @@ Authorization: Bearer <JWT-TOKEN>
 
 ## 4. 股票儀表板代理 API（`/api/stock/*`）
 
-行事曆平台的「股票」分頁用的唯讀代理。**登入系統只有一套**：本專案簽的 JWT（payload `{ id, username }`，1 小時）
+行事曆平台的「股票」分頁用的代理（Iteration 44 起儀表板全部功能都在統一前端，代理轉所有方法）。**登入系統只有一套**：本專案簽的 JWT（payload `{ id, username }`，1 小時）
 原樣轉給 erucMoney 的 Node API（`STOCK_API_URL`）；erucMoney 的 `JWT_SECRET` 與本專案的 `SECRET` 相同，
 它驗過 token 後以 `external_id = id` 對應（第一次自動建立）自己的使用者列，持股與交易台帳因此是使用者自己的。
-前端開啟 erucMoney 完整儀表板時，把同一個 token 放在網址片段 `#token=…` 交接，那邊不用再登入。
 
 ### 4.1 上游狀態（`GET /api/stock/health`）
 
@@ -827,31 +826,26 @@ Authorization: Bearer <JWT-TOKEN>
 - 上游離線：`502 { "message": "...", "error": { "code": "E502_STOCK_UPSTREAM" }, "data": { "online": false } }`
 - 沒帶 token：`401 E004_UNAUTHORIZED`
 
-### 4.2 轉發（`GET /api/stock/<path>?<query>`）
+### 4.2 轉發（`ANY /api/stock/<path>?<query>`）
 
-白名單（其餘一律 `403 E403_STOCK_PATH`）：
+方法（GET／POST／PUT／DELETE）、query、JSON body 原樣轉到 `STOCK_API_URL` 的同一路徑。允許的第一段路徑：
+`health`、`stocks`、`forecast`、`catalog`、`predictions`、`voting`、`holdings`、`cash`、`gap`、`model`、`models`、
+`news`、`crawler`、`data`、`us`、`auth`；其餘 `403 E403_STOCK_PATH`。不轉 `/auth/login`（登入在本平台）與
+`/auth/change-password`（SSO 使用者在上游沒有密碼）。
 
-| 路徑 | 說明 |
-|------|------|
-| `/stocks?tracked=true` | 追蹤股票 + 最新收盤、漲跌、外資持股 |
-| `/stocks?max_price=&industry=` | 依預算篩選 |
-| `/stocks/industries` | 產業清單 |
-| `/stocks/:id` | 個股基本資訊 |
-| `/stocks/:id/prices?days=` / `/chips` / `/institutional` | 行情、籌碼、法人 |
-| `/forecast/weekly`、`/forecast/weekly/status` | 每週全模型預測 |
-| `/catalog` | 模型目錄 |
-| `/predictions/:id`、`/voting/results` | 預測與投票結果 |
-| `/holdings`、`/holdings/trades`、`/holdings/review` | 使用者自己的持股、交易台帳、建議 vs 實際 |
-| `/auth/me` | 使用者在股票系統的對應身分 |
+上游的權限由上游決定：`/crawler`、`/models`、`/data`、`/auth/users` 要 admin 角色（erucMoney `.env` 的
+`SSO_ADMIN_USERNAMES` 可指定哪些本平台帳號第一次進去就升 admin）。長工作（`/data/backfill`、`/models/evaluate`、
+`/crawler/*`、`/forecast/weekly/run`、`/voting/run`、`/model/retrain`）逾時放寬到 `STOCK_API_LONG_TIMEOUT_MS`（預設 180 秒）。
 
-回應：`200 { "data": <上游原始 JSON> }`。上游 4xx／5xx → `502 E502_STOCK_UPSTREAM`（404 保留 404）；
-上游回 401 → `502 E502_STOCK_AUTH`（通常是兩邊密鑰不同）。
+回應：`200 { "data": <上游原始 JSON> }`。上游 4xx（403／404／409／422）原樣保留狀態碼，
+`{ "message": <上游 detail>, "error": { "code": "E502_STOCK_UPSTREAM" }, "upstream": <上游 JSON> }`；
+上游 5xx、連線失敗、逾時 → `502`；上游回 401 → `502 E502_STOCK_AUTH`（通常是兩邊密鑰不同）。
 
 ### 4.3 錯誤碼
 
 | 代碼 | HTTP | 說明 |
 |------|------|------|
-| `E403_STOCK_PATH` | 403 | 不在白名單的路徑 |
+| `E403_STOCK_PATH` | 403 | 不允許的路徑或方法 |
 | `E004_UNAUTHORIZED` | 401 | 沒帶 token |
 | `E502_STOCK_AUTH` | 502 | 上游不接受這個 token（兩邊 JWT 密鑰不同） |
 | `E502_STOCK_UPSTREAM` | 502 | 上游連線失敗、逾時或回錯誤 |
