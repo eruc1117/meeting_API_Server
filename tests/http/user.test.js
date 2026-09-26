@@ -50,7 +50,8 @@ describe('GET /api/user/info', () => {
         id: userIdA,
         email: userA.email,
         username: userA.username,
-        account: userA.account
+        account: userA.account,
+        role: 'user'
       }
     });
   });

@@ -1,3 +1,5 @@
+// 白名單在模組載入時就從環境變數讀出來，所以要在 require 之前設好（.env.test 也有 SOURCEIP，這裡再保險一次）
+process.env.SOURCEIP = '127.0.0.1';
 const ipWhitelist = require('../../middlewares/ipWhitelist');
 
 describe('ipWhitelist middleware', () => {

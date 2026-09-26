@@ -1,6 +1,8 @@
 const request = require('supertest');
+const jwt = require('jsonwebtoken');
 const app = require('../../app');
 const db = require('../../db');
+const { createUser, deleteUsers } = require('../helpers/users');
 
 describe('POST /api/auth/register', () => {
   afterAll(async () => {
@@ -92,6 +94,57 @@ describe('POST /api/auth/register', () => {
       data: {},
       error: { code: 'E001_USER_EXISTS' }
     });
+  });
+});
+
+describe('角色與 ADMIN_ACCOUNTS（整套平台共用的 admin）', () => {
+  const ids = [];
+  afterAll(async () => {
+    await db.query("DELETE FROM users WHERE email IN ('t_admin@example.com', 'plain_role@example.com')");
+    await deleteUsers(ids);
+  });
+
+  it('一般帳號註冊：回 role=user，JWT payload 為 {id, username, role}', async () => {
+    const res = await request(app).post('/api/auth/register').send({
+      email: 'plain_role@example.com', username: 'plainrole', account: 'plain_role', password: 'Password123', passwordChk: 'Password123',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data.user).toEqual({ id: expect.any(Number), username: 'plainrole', role: 'user' });
+    const payload = jwt.verify(res.body.data.token, process.env.SECRET);
+    expect(payload).toEqual(expect.objectContaining({ id: res.body.data.user.id, username: 'plainrole', role: 'user' }));
+    ids.push(res.body.data.user.id);
+  });
+
+  it('ADMIN_ACCOUNTS 內的帳號註冊：role=admin', async () => {
+    expect(process.env.ADMIN_ACCOUNTS).toBe('t_admin');   // 來自 .env.test
+    const res = await request(app).post('/api/auth/register').send({
+      email: 't_admin@example.com', username: 'tadmin', account: 't_admin', password: 'Password123', passwordChk: 'Password123',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data.user.role).toBe('admin');
+    expect(jwt.verify(res.body.data.token, process.env.SECRET).role).toBe('admin');
+    ids.push(res.body.data.user.id);
+  });
+
+  it('登入回 role，且 ADMIN_ACCOUNTS 帳號登入時會從 user 升成 admin', async () => {
+    // 直接用 SQL 建一個 role=user 的 t_admin（模擬加入清單之前就註冊的帳號）
+    await db.query("DELETE FROM users WHERE account = 't_admin'");
+    const u = await createUser({ account: 't_admin', role: 'user' });
+    ids.push(u.id);
+    const res = await request(app).post('/api/auth/login').send({ account: 't_admin', password: 'Password123' });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data.user.role).toBe('admin');
+    expect(jwt.verify(res.body.data.token, process.env.SECRET).role).toBe('admin');
+    const { rows } = await db.query('SELECT role FROM users WHERE id = $1', [u.id]);
+    expect(rows[0].role).toBe('admin');
+  });
+
+  it('停用的帳號登入回 403 E014_ACCOUNT_DISABLED', async () => {
+    const u = await createUser({ account: 'disabled_one', is_active: false });
+    ids.push(u.id);
+    const res = await request(app).post('/api/auth/login').send({ account: 'disabled_one', password: 'Password123' });
+    expect(res.statusCode).toBe(403);
+    expect(res.body).toEqual({ message: '此帳號已停用', data: {}, error: { code: 'E014_ACCOUNT_DISABLED' } });
   });
 });
 

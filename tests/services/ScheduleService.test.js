@@ -5,6 +5,13 @@ const db = require('../../db');
 jest.mock('../../db');
 jest.mock("../../models/Schedule");
 
+// validator.validateDateTime 只接受「一年前 ～ 兩年後」的日期；之前寫死 2025-05-08，到了 2026 就過期而失敗。
+// 改用相對日期（下個月），測試才不會隨時間壞掉。
+const nextMonth = new Date(); nextMonth.setMonth(nextMonth.getMonth() + 1); nextMonth.setHours(9, 0, 0, 0);
+const iso = (d) => d.toISOString().slice(0, 19);
+const START = iso(nextMonth);
+const END = iso(new Date(nextMonth.getTime() + 60 * 60 * 1000));
+
 describe('ScheduleService.createSchedule', () => {
 
   const mockSchedule = {
@@ -12,17 +19,18 @@ describe('ScheduleService.createSchedule', () => {
     user_id: 1,
     title: 'Meeting',
     description: 'Discuss project',
-    start_time: '2025-05-08T09:00:00',
-    end_time: '2025-05-08T10:00:00',
+    start_time: START,
+    end_time: END,
     is_public: true,
     location: '會議室 A',
     participants: '小明',
-    created_at: '2025-05-08T09:00:00',
-    updated_at: '2025-05-08T09:00:00'
+    created_at: START,
+    updated_at: START
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
+    db.query.mockReset();   // 清掉 mockReturnValueOnce 的佇列，避免前一個案例沒消耗掉的值漏到下一個
   });
 
   it('活動建立成功，回傳成功訊息', async () => {
@@ -30,7 +38,7 @@ describe('ScheduleService.createSchedule', () => {
     db.query.mockReturnValueOnce({ rows: [mockSchedule] });
 
     const result = await ScheduleService.createSchedule(
-      1, 'Meeting', 'Discuss project', '2025-05-08T09:00:00', '2025-05-08T10:00:00', true, '會議室 A', '小明'
+      1, 'Meeting', 'Discuss project', START, END, true, '會議室 A', '小明'
     );
 
     expect(result.message).toBe('活動建立成功');
@@ -38,7 +46,7 @@ describe('ScheduleService.createSchedule', () => {
   });
 
   it('資料未提供，回傳錯誤訊息', async () => {
-    const result = await ScheduleService.createSchedule(null, '', '', '2025-05-08T09:00:00', '2025-05-08T10:00:00', true);
+    const result = await ScheduleService.createSchedule(null, '', '', START, END, true);
     expect(result.message).toBe('活動建立失敗，資料未提供');
     expect(result.error.code).toBe('E012_MISSING_FIELDS');
   });
@@ -47,7 +55,7 @@ describe('ScheduleService.createSchedule', () => {
     Schedule.findEvent.mockResolvedValue([mockSchedule]);
 
     const result = await ScheduleService.createSchedule(
-      1, 'Repeat Meeting', 'Discuss project', '2025-05-08T09:00:00', '2025-05-08T10:00:00', true, null, null
+      1, 'Repeat Meeting', 'Discuss project', START, END, true, null, null
     );
 
     expect(result.message).toBe('活動建立失敗，時段重複');
@@ -58,9 +66,11 @@ describe('ScheduleService.createSchedule', () => {
 
 
 describe('ScheduleService.getSchedulesByUserId', () => {
+  beforeEach(() => { db.query.mockReset(); });
+
   it('should return schedules for user', async () => {
     const mockSchedules = [
-      { id: 1, user_id: 1, title: 'Meeting', start_time: '2025-05-08T09:00:00', is_public: true, location: '會議室 A', participants: '小明' }
+      { id: 1, user_id: 1, title: 'Meeting', start_time: START, is_public: true, location: '會議室 A', participants: '小明' }
     ];
     db.query.mockResolvedValue({ rows: mockSchedules });
 

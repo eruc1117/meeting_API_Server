@@ -165,21 +165,48 @@ npm run migrate:up
 
 ## 測試
 
+四層：**單元**（services、middlewares、controllers、validator，全部 mock，不碰 DB）→ **API 整合**（`tests/http/`、`tests/db/`，supertest 打真的測試資料庫）→ 端到端（前端 repo 的 Playwright）→ 部署冒煙（erucMoney `Deploy/`）。
+
+### 測試資料庫
+
+測試**只會打 `*_test` 資料庫**，設定在 `.env.test`（可 commit，沒有密碼）：
+
+- `tests/setup-env.js`：每個測試檔載入前先讀 `.env`（拿本機的 DB 連線與密碼），再用 `.env.test` 覆蓋，並檢查 `DB_NAME` 以 `_test` 結尾，否則直接拋錯。
+- `tests/global-setup.js`：跑全部測試前建立 `Schedule_test`（不存在時 `CREATE DATABASE`）並用 node-pg-migrate 遷到最新。
+- 本機不用手動建庫；密碼沿用 `.env` 的 `DB_PASSWORD`，或另外設環境變數 `TEST_DB_PASSWORD`。CI 由 workflow 提供 `DB_PASSWORD`。
+- 手動建（權限不夠時）：`CREATE DATABASE "Schedule_test";` 然後 `DATABASE_URL=postgres://postgres:<密碼>@localhost:5432/Schedule_test npm run migrate:up`。
+
+### 執行
+
 ```bash
-# 全部單元測試
-npm test
+npm test                 # 全部（--runInBand：http 測試共用同一個測試庫，不平行）
+npm run test:unit        # 只跑單元（秒級）
+npm run test:http        # 只跑 API 整合
+npm run test:coverage    # 含覆蓋率；statements 低於 75% 會失敗（jest.config.js）
 
-# 分類執行
-npm run test:services
-npm run test:controllers
-npm run test:http
-
-# 負載測試
+# 負載測試（另起服務後）
 npm run test:load           # 認證流程
 npm run test:load:schedule  # 行程查詢
 npm run test:load:spike     # 峰值測試
 npm run test:load:soak      # 浸泡測試
 ```
+
+### 功能對應
+
+| 功能 | 檔案 |
+|------|------|
+| 註冊、登入、改密碼、role、ADMIN_ACCOUNTS、停用帳號 | `tests/http/auth.test.js`、`tests/services/AuthService.test.js` |
+| 平台使用者管理（`/api/admin/users`） | `tests/http/admin.test.js`、`tests/services/AdminService.test.js`、`tests/middlewares/adminMiddleware.test.js` |
+| 行程 CRUD、查詢、參與 | `tests/http/schedule.test.js`、`tests/services/ScheduleService.test.js` |
+| 使用者資料、搜尋 | `tests/http/user.test.js`、`tests/services/UserService.test.js` |
+| 股票代理（`/api/stock/*`） | `tests/http/stock-proxy.test.js`（假上游在 `tests/helpers/stock-upstream.js`）、`tests/services/StockService.test.js` |
+| CORS、body 上限、登入限流、helmet | `tests/http/security.test.js`、`tests/middlewares/ipWhitelist.test.js` |
+| 資料庫連線與 migration 可逆 | `tests/db/db.test.js`、`tests/db/migrations.test.js` |
+
+helper：`tests/helpers/tokens.js`（直接簽 JWT）、`tests/helpers/users.js`（用 SQL 建／刪測試使用者，不吃註冊限流）。
+日期相關案例一律用相對日期（`validateDateTime` 只接受一年前～兩年後），不要寫死年份。
+
+CI：`.github/workflows/test.yml`（push 與 PR；postgres:16 服務 + `npm run test:coverage`）。
 
 ---
 

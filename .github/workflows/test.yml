@@ -1,0 +1,43 @@
+# 行事曆後端測試：push 與 PR 都跑。
+# 用 postgres:16 服務建 Schedule_test，tests/global-setup.js 會自動跑 migration。
+# 覆蓋率門檻在 jest.config.js（statements 75%）。
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: Schedule_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # .env.test 沒有密碼；CI 的測試庫密碼從這裡給（tests/setup-env.js 不會覆蓋已存在的變數）
+      DB_PASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run test:coverage
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage/lcov-report
+          retention-days: 7

@@ -3,6 +3,10 @@ const app = require('../../app');
 const db = require('../../db');
 require('dotenv').config();
 
+// validator.validateDateTime 只接受「一年前 ～ 兩年後」；舊案例寫死 2025-05-08 在 2026 年會被判無效。
+// day(n) = 下個月的 8 號 + n 天（YYYY-MM-DD），讓時段衝突／區間查詢的相對關係跟原本一樣。
+const day = (n) => { const d = new Date(); d.setMonth(d.getMonth() + 1, 8 + n); return d.toISOString().slice(0, 10); };
+
 describe('Schedule API 測試', () => {
   let token;
   let userId;
@@ -38,8 +42,8 @@ describe('Schedule API 測試', () => {
         .send({
           title: 'Meeting with John',
           description: 'Discuss project details',
-          start_time: '2025-05-08 09:00:00',
-          end_time: '2025-05-08 10:00:00',
+          start_time: `${day(0)} 09:00:00`,
+          end_time: `${day(0)} 10:00:00`,
           is_public: true
         });
 
@@ -54,8 +58,8 @@ describe('Schedule API 測試', () => {
         .post('/api/schedules/create')
         .set('Authorization', `Bearer ${token}`)
         .send({
-          start_time: '2025-05-08 09:00:00',
-          end_time: '2025-05-08 10:00:00'
+          start_time: `${day(0)} 09:00:00`,
+          end_time: `${day(0)} 10:00:00`
         });
 
       expect(res.statusCode).toBe(400);
@@ -70,8 +74,8 @@ describe('Schedule API 測試', () => {
         .send({
           title: 'Meeting with John',
           description: 'Discuss project details',
-          start_time: '2025-05-08 09:00:00',
-          end_time: '2025-05-08 10:00:00'
+          start_time: `${day(0)} 09:00:00`,
+          end_time: `${day(0)} 10:00:00`
         });
 
       expect(res.statusCode).toBe(409);
@@ -82,7 +86,7 @@ describe('Schedule API 測試', () => {
     it('未提供 JWT 應回傳 401', async () => {
       const res = await request(app)
         .post('/api/schedules/create')
-        .send({ title: 'Unauthorized', start_time: '2025-05-08 09:00:00', end_time: '2025-05-08 10:00:00' });
+        .send({ title: 'Unauthorized', start_time: `${day(0)} 09:00:00`, end_time: `${day(0)} 10:00:00` });
 
       expect(res.statusCode).toBe(401);
       expect(res.body.message).toBe('帳號尚未登入');
@@ -109,8 +113,8 @@ describe('Schedule API 測試', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({
           user_id: userId,
-          start_time: '2025-01-01T00:00:00',
-          end_time: '2025-12-31T23:59:59'
+          start_time: `${day(-131)}T00:00:00`,
+          end_time: `${day(240)}T23:59:59`
         });
 
       expect(res.statusCode).toBe(200);
@@ -138,8 +142,8 @@ describe('Schedule API 測試', () => {
         .send({
           title: 'Before Update',
           description: 'Before',
-          start_time: '2025-05-08 11:00:00',
-          end_time: '2025-05-08 12:00:00',
+          start_time: `${day(0)} 11:00:00`,
+          end_time: `${day(0)} 12:00:00`,
           is_public: true
         });
 
@@ -153,8 +157,8 @@ describe('Schedule API 測試', () => {
         .send({
           title: 'Updated Title',
           description: 'Updated Description',
-          start_time: '2025-05-08 11:00:00',
-          end_time: '2025-05-08 12:00:00',
+          start_time: `${day(0)} 11:00:00`,
+          end_time: `${day(0)} 12:00:00`,
           is_public: true
         });
 
@@ -169,8 +173,8 @@ describe('Schedule API 測試', () => {
         .send({
           title: 'Updated Title',
           description: 'Updated Description',
-          start_time: '2025-05-08 11:00:00',
-          end_time: '2025-05-08 12:00:00'
+          start_time: `${day(0)} 11:00:00`,
+          end_time: `${day(0)} 12:00:00`
         });
 
       expect(res.statusCode).toBe(404);
@@ -228,8 +232,8 @@ describe('Schedule API 測試', () => {
         .send({
           title: 'Open Event',
           description: 'Open to all',
-          start_time: '2025-06-01 09:00:00',
-          end_time: '2025-06-01 10:00:00',
+          start_time: `${day(24)} 09:00:00`,
+          end_time: `${day(24)} 10:00:00`,
           is_public: true
         });
 
@@ -271,8 +275,8 @@ describe('Schedule API 測試', () => {
         .send({
           title: 'Attend Then Leave',
           description: 'test',
-          start_time: '2025-07-01 09:00:00',
-          end_time: '2025-07-01 10:00:00',
+          start_time: `${day(55)} 09:00:00`,
+          end_time: `${day(55)} 10:00:00`,
           is_public: true
         });
 
