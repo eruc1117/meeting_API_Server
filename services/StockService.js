@@ -21,6 +21,7 @@ const ALLOWED_PREFIXES = [
   'health', 'stocks', 'forecast', 'catalog', 'predictions', 'voting', 'holdings',
   'cash', 'gap', 'model', 'models', 'news', 'crawler', 'data', 'us', 'auth',
   'portfolio',   // 月調倉實驗日誌（erucMoney Iteration 51）
+  'progress',    // 工作進度（Claude Code harness，上游要求 admin）
 ];
 const DENIED = [/^\/auth\/login$/, /^\/auth\/change-password$/];
 // 匿名（沒帶 token）只能 GET 分析類端點；個人資料與所有寫入要登入（Iteration 52，與上游 erucMoney 的 readPublic／requireUser 一致）
