@@ -25,7 +25,7 @@ const ALLOWED_PREFIXES = [
 ];
 const DENIED = [/^\/auth\/login$/, /^\/auth\/change-password$/];
 // 匿名（沒帶 token）只能 GET 分析類端點；個人資料與所有寫入要登入（Iteration 52，與上游 erucMoney 的 readPublic／requireUser 一致）
-const PERSONAL_PREFIXES = ['holdings', 'cash', 'auth', 'crawler', 'models', 'data'];
+const PERSONAL_PREFIXES = ['holdings', 'cash', 'auth', 'crawler', 'models', 'data', 'progress'];
 
 function anonymousAllowed(method, path) {
   if (method !== 'GET') return false;
