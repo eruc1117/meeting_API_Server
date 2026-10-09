@@ -27,6 +27,26 @@ describe('/api/stock 代理', () => {
     expect(upstream.calls).toHaveLength(0);
   });
 
+  it('交易模擬 /sim 匿名也能 POST（上游公開、只讀）；程式交易 /trading 要登入（erucMoney Iteration 57～60）', async () => {
+    const body = { text: '2024-01-15 買 2330 10股', start: '2024-01-02', end: '2024-09-30', capital: 300000 };
+    const res = await request(app).post('/api/stock/sim/run').send(body);
+    expect(res.statusCode).not.toBe(401);
+    expect(res.statusCode).not.toBe(403);
+    expect(upstream.calls[0]).toEqual(expect.objectContaining({ method: 'POST', path: '/sim/run', body }));
+    expect(upstream.calls[0].auth || '').toBe('');
+    upstream.calls.length = 0;
+    expect((await request(app).get('/api/stock/sim/replay?start=2018-11-12&end=2024-09-30')).statusCode).not.toBe(401);
+    expect(upstream.calls[0]).toEqual(expect.objectContaining({ method: 'GET', path: '/sim/replay', query: { start: '2018-11-12', end: '2024-09-30' } }));
+    upstream.calls.length = 0;
+    expect((await request(app).get('/api/stock/trading/plan?cash=1000')).statusCode).toBe(401);
+    expect((await request(app).get('/api/stock/trading/engine/status')).statusCode).toBe(401);
+    expect(upstream.calls).toHaveLength(0);
+    const ok = await request(app).get('/api/stock/trading/engine/status').set('Authorization', `Bearer ${tok}`);
+    expect(ok.statusCode).not.toBe(401);
+    expect(ok.statusCode).not.toBe(403);
+    expect(upstream.calls[0]).toEqual(expect.objectContaining({ method: 'GET', path: '/trading/engine/status', auth: `Bearer ${tok}` }));
+  });
+
   it('GET 帶 Bearer 原樣轉，query 保留，回 {data}', async () => {
     const res = await request(app).get('/api/stock/stocks?tracked=true').set('Authorization', `Bearer ${tok}`);
     expect(res.statusCode).toBe(200);

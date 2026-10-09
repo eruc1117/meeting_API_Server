@@ -22,14 +22,19 @@ const ALLOWED_PREFIXES = [
   'cash', 'gap', 'model', 'models', 'news', 'crawler', 'data', 'us', 'auth',
   'portfolio',   // 月調倉實驗日誌（erucMoney Iteration 51）
   'progress',    // 工作進度（Claude Code harness，上游要求 admin）
+  'trading',     // 程式交易：清單 → 這個人的下單指令、引擎狀態（erucMoney Iteration 57／58，上游要求登入）
+  'sim',         // 交易模擬：歷史回放、自訂指令（erucMoney Iteration 60，上游公開、只讀；POST /sim/run 匿名也可以）
 ];
 const DENIED = [/^\/auth\/login$/, /^\/auth\/change-password$/];
 // 匿名（沒帶 token）只能 GET 分析類端點；個人資料與所有寫入要登入（Iteration 52，與上游 erucMoney 的 readPublic／requireUser 一致）
-const PERSONAL_PREFIXES = ['holdings', 'cash', 'auth', 'crawler', 'models', 'data', 'progress'];
+const PERSONAL_PREFIXES = ['holdings', 'cash', 'auth', 'crawler', 'models', 'data', 'progress', 'trading'];
+// 匿名也可以 POST 的前綴：上游只讀、不寫任何帳戶（/sim/run 是「跑一次模擬回結果」，不是寫入）
+const ANONYMOUS_POST_PREFIXES = ['sim'];
 
 function anonymousAllowed(method, path) {
-  if (method !== 'GET') return false;
   const first = String(path || '').split('/')[1] || '';
+  if (method === 'POST' && ANONYMOUS_POST_PREFIXES.includes(first)) return true;
+  if (method !== 'GET') return false;
   return !PERSONAL_PREFIXES.includes(first);
 }
 const METHODS = new Set(['GET', 'POST', 'PUT', 'DELETE', 'PATCH']);
