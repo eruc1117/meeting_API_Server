@@ -73,10 +73,15 @@ describe('StockService.proxy（轉送使用者自己的 token、方法與 body�
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  it('returns E004_UNAUTHORIZED when no token is given', async () => {
-    global.fetch = jest.fn();
+  it('no token: analysis GET is forwarded without Authorization; personal paths and writes return E004 (Iteration 52)', async () => {
+    global.fetch = jest.fn(async (url, init) => ({ ok: true, status: 200, headers: new Map(), json: async () => ({ ok: true, auth: init.headers.Authorization || null }) }));
     const r = await StockService.proxyGet('/stocks', {}, '');
-    expect(r.error.code).toBe('E004_UNAUTHORIZED');
+    expect(r.error).toBeUndefined();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(global.fetch.mock.calls[0][1].headers.Authorization).toBeUndefined();
+    global.fetch = jest.fn();
+    expect((await StockService.proxyGet('/holdings', {}, '')).error.code).toBe('E004_UNAUTHORIZED');
+    expect((await StockService.proxy({ method: 'POST', path: '/news', token: '', body: {} })).error.code).toBe('E004_UNAUTHORIZED');
     expect(global.fetch).not.toHaveBeenCalled();
   });
 

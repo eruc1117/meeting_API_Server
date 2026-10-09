@@ -23,6 +23,14 @@ const ALLOWED_PREFIXES = [
   'portfolio',   // 月調倉實驗日誌（erucMoney Iteration 51）
 ];
 const DENIED = [/^\/auth\/login$/, /^\/auth\/change-password$/];
+// 匿名（沒帶 token）只能 GET 分析類端點；個人資料與所有寫入要登入（Iteration 52，與上游 erucMoney 的 readPublic／requireUser 一致）
+const PERSONAL_PREFIXES = ['holdings', 'cash', 'auth', 'crawler', 'models', 'data'];
+
+function anonymousAllowed(method, path) {
+  if (method !== 'GET') return false;
+  const first = String(path || '').split('/')[1] || '';
+  return !PERSONAL_PREFIXES.includes(first);
+}
 const METHODS = new Set(['GET', 'POST', 'PUT', 'DELETE', 'PATCH']);
 
 function isAllowed(path) {
@@ -60,12 +68,12 @@ async function proxy({ method = 'GET', path, query = {}, token = '', body, timeo
   if (!isAllowed(path)) {
     return { error: { code: 'E403_STOCK_PATH', message: '不允許的股票端點' } };
   }
-  if (!token) {
-    return { error: { code: 'E004_UNAUTHORIZED', message: '帳號尚未登入', status: 401 } };
+  if (!token && !anonymousAllowed(method, path)) {
+    return { error: { code: 'E004_UNAUTHORIZED', message: '帳號尚未登入' } };
   }
   const qs = new URLSearchParams(query).toString();
   const url = `${cfg().base}${path}${qs ? `?${qs}` : ''}`;
-  const headers = { Authorization: `Bearer ${token}` };
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};   // 匿名讀取不帶 Authorization（上游 readPublic 放行 GET）
   const init = { method, headers };
   if (method !== 'GET' && body !== undefined) {
     headers['Content-Type'] = 'application/json';

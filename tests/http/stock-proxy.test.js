@@ -15,9 +15,15 @@ afterAll(async () => { await upstream.close(); });
 beforeEach(() => { upstream.calls.length = 0; });
 
 describe('/api/stock 代理', () => {
-  it('未登入 401', async () => {
+  it('未登入：分析類 GET 匿名轉發（不帶 Authorization）；個人資料與寫入 401（Iteration 52）', async () => {
     const res = await request(app).get('/api/stock/stocks');
-    expect(res.statusCode).toBe(401);
+    expect(res.statusCode).toBe(200);
+    expect(upstream.calls[0]).toEqual(expect.objectContaining({ method: 'GET', path: '/stocks' }));
+    expect(upstream.calls[0].auth || '').toBe('');
+    upstream.calls.length = 0;
+    expect((await request(app).get('/api/stock/holdings')).statusCode).toBe(401);
+    expect((await request(app).post('/api/stock/holdings/trades').send({ stock_id: '2330' })).statusCode).toBe(401);
+    expect((await request(app).get('/api/stock/crawler/status/2330')).statusCode).toBe(401);
     expect(upstream.calls).toHaveLength(0);
   });
 
