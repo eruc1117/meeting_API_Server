@@ -20,6 +20,7 @@ const cfg = () => ({
 const ALLOWED_PREFIXES = [
   'health', 'stocks', 'forecast', 'catalog', 'predictions', 'voting', 'holdings',
   'cash', 'gap', 'model', 'models', 'news', 'crawler', 'data', 'us', 'auth',
+  'portfolio',   // 月調倉實驗日誌（erucMoney Iteration 51）
 ];
 const DENIED = [/^\/auth\/login$/, /^\/auth\/change-password$/];
 const METHODS = new Set(['GET', 'POST', 'PUT', 'DELETE', 'PATCH']);
